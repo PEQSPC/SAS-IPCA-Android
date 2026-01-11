@@ -26,11 +26,11 @@ class AuthRepository @Inject constructor(
             )
                 .await()
 
-            result.user?.email?.let {
+            val user = result.user
+            if (user != null && user.email != null) {
                 db.collection("users")
-                    .document(result.user!!.uid)
-
-                    .set(mapOf("email" to it), SetOptions.merge())
+                    .document(user.uid)
+                    .set(mapOf("email" to user.email), SetOptions.merge())
                     .await()
             }
 
@@ -50,10 +50,11 @@ class AuthRepository @Inject constructor(
             )
                 .await()
 
-            result.user?.email?.let {
+            val user = result.user
+            if (user != null && user.email != null) {
                 db.collection("users")
-                    .document(result.user!!.uid)
-                    .set(mapOf("email" to it))
+                    .document(user.uid)
+                    .set(mapOf("email" to user.email))
                     .await()
             }
             emit(ResultWrapper.Success(Unit))

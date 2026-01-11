@@ -1,6 +1,7 @@
 package com.example.lojasocial.ui.register
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,11 +40,10 @@ fun RegisterView(
     Box(modifier = modifier.fillMaxSize()) {
 
         // Fundo (igual ao Login)
-        Image(
-            painter = painterResource(R.drawable.img),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
         )
 
         Column(

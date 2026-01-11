@@ -63,7 +63,16 @@ class StartViewModel : ViewModel() {
                         return
                     }
 
-                    val result = response.body!!.string()
+                    val body = response.body
+                    if (body == null) {
+                        uiState.value = uiState.value.copy(
+                            isLoading = false,
+                            error = "Resposta vazia do servidor"
+                        )
+                        return
+                    }
+
+                    val result = body.string()
                     val jsonResult = JSONObject(result)
 
                     // 👇 É ISTO: getJSONArray, tudo junto, sem caracteres estranhos

@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.lojasocial.AppConstansts
+import com.example.lojasocial.AppConstants
 import com.example.lojasocial.R
 import com.example.lojasocial.models.Products
 import com.example.lojasocial.ui.theme.LojaSocialTheme
@@ -146,14 +146,16 @@ fun ProductsView(
         modifier = modifier,
         uiState = uiState,
         onAddClick = {
-            navController.navigate(AppConstansts.productsDetailCreate) {
+            navController.navigate(AppConstants.productsDetailCreate) {
                 launchSingleTop = true
             }
         },
         onProductClick = { product ->
             val id = product.docId?.trim().orEmpty()
             if (id.isNotBlank()) {
-                navController.navigate("productsDetail/$id") {
+                navController.navigate(
+                    AppConstants.productsDetail.replace("{docId}", id)
+                ) {
                     launchSingleTop = true
                 }
             }
@@ -247,19 +249,19 @@ fun ProductsViewContent(
                 selected = selectedTab,
                 onSelect = { tab ->
                     when (tab) {
-                        BottomTab.Products -> navController.navigate(AppConstansts.products) {
+                        BottomTab.Products -> navController.navigate(AppConstants.products) {
                             launchSingleTop = true
                         }
 
-                        BottomTab.Beneficiaries -> navController.navigate(AppConstansts.beneficiaries) {
+                        BottomTab.Beneficiaries -> navController.navigate(AppConstants.beneficiaries) {
                             launchSingleTop = true
                         }
 
-                        BottomTab.CreateBeneficiary -> navController.navigate(AppConstansts.createBeneficiary) {
+                        BottomTab.CreateBeneficiary -> navController.navigate(AppConstants.createBeneficiary) {
                             launchSingleTop = true
                         }
 
-                        BottomTab.Admin -> navController.navigate(AppConstansts.adminHome) {
+                        BottomTab.Admin -> navController.navigate(AppConstants.adminHome) {
                             launchSingleTop = true
                         }
                     }

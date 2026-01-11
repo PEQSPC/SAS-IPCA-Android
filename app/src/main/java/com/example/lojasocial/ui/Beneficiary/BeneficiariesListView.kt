@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.lojasocial.AppConstansts
+import com.example.lojasocial.AppConstants
 import com.example.lojasocial.R
 import com.example.lojasocial.models.Beneficiary
 import com.example.lojasocial.ui.theme.LojaSocialTheme
@@ -42,10 +42,10 @@ fun BeneficiariesListView(
         modifier = modifier,
         uiState = uiState,
         onSearchChange = vm::setSearch,
-        onCreateClick = { navController.navigate(AppConstansts.createBeneficiary) },
+        onCreateClick = { navController.navigate(AppConstants.createBeneficiary) },
         onItemClick = { b ->
             val id = b.docId ?: return@BeneficiariesListViewContent
-            navController.navigate(AppConstansts.beneficiaryDetail.replace("{docId}", id))
+            navController.navigate(AppConstants.beneficiaryDetail.replace("{docId}", id))
         }
     )
 }

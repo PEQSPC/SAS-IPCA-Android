@@ -31,7 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.lojasocial.AppConstansts
+import com.example.lojasocial.AppConstants
 import com.example.lojasocial.R
 import com.example.lojasocial.models.Cart
 import com.example.lojasocial.models.Profile
@@ -56,7 +56,11 @@ fun CartsView(
         modifier = modifier,
         uiState = uiState,
         onCartClick = { cart ->
-            navController.navigate("products/${cart.docId}")
+            cart.docId?.let { docId ->
+                navController.navigate(
+                    AppConstants.productsDetail.replace("{docId}", docId)
+                )
+            }
         },
         onAddClick = {
             viewModel.addCart()
@@ -181,7 +185,7 @@ fun CartsViewContent(
             ),
             shape = RoundedCornerShape(20.dp)
         ) {
-            Text(AppConstansts.products)
+            Text(AppConstants.products)
         }
 
         
@@ -196,7 +200,7 @@ fun CartsViewContent(
             ),
             shape = RoundedCornerShape(20.dp)
         ) {
-            Text(AppConstansts.loginRoute)
+            Text(AppConstants.loginRoute)
         }
     }
 }

@@ -46,7 +46,16 @@ class StartProductViewModel : ViewModel() {
                         return
                     }
 
-                    val jsonString = response.body!!.string()
+                    val body = response.body
+                    if (body == null) {
+                        uiState.value = uiState.value.copy(
+                            isLoading = false,
+                            error = "Resposta vazia do servidor"
+                        )
+                        return
+                    }
+
+                    val jsonString = body.string()
                     val jsonObject = JSONObject(jsonString)
 
                     val product = Product.fromJson(jsonObject)

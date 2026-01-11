@@ -65,10 +65,18 @@ class RegisterViewModel @Inject constructor(
             return
         }
 
-        authRepository.register(
-            uiState.value.email!!,
-            uiState.value.password!!
-        ).onEach { result ->
+        val email = uiState.value.email
+        val password = uiState.value.password
+
+        if (email == null || password == null) {
+            uiState.value = uiState.value.copy(
+                error = "Email e password são obrigatórios",
+                isLoading = false
+            )
+            return
+        }
+
+        authRepository.register(email, password).onEach { result ->
             when (result) {
                 is ResultWrapper.Success -> {
                     onRegisterSuccess()

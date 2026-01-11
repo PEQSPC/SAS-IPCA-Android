@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.lojasocial.AppConstansts
+import com.example.lojasocial.AppConstants
 import com.example.lojasocial.R
 import com.example.lojasocial.ui.theme.LojaSocialTheme
 
@@ -46,9 +46,9 @@ fun FamilyCreateView(
         onSaveClick = {
             vm.create {
                 // ✅ volta à lista de famílias
-                navController.navigate(AppConstansts.families) {
+                navController.navigate(AppConstants.families) {
                     launchSingleTop = true
-                    popUpTo(AppConstansts.families) { inclusive = true }
+                    popUpTo(AppConstants.families) { inclusive = true }
                 }
             }
         },
@@ -215,21 +215,21 @@ fun FamilyCreateViewContent(
             ) {
                 NavigationBarItem(
                     selected = false,
-                    onClick = { navController.navigate(AppConstansts.products) { launchSingleTop = true } },
+                    onClick = { navController.navigate(AppConstants.products) { launchSingleTop = true } },
                     icon = { Icon(Icons.Default.Inventory2, contentDescription = "Produtos") },
                     label = { Text("Produtos", maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 )
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = { navController.navigate(AppConstansts.beneficiaries) { launchSingleTop = true } },
+                    onClick = { navController.navigate(AppConstants.beneficiaries) { launchSingleTop = true } },
                     icon = { Icon(Icons.Default.Group, contentDescription = "Benef.") },
                     label = { Text("Benef.", maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 )
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = { navController.navigate(AppConstansts.createBeneficiary) { launchSingleTop = true } },
+                    onClick = { navController.navigate(AppConstants.createBeneficiary) { launchSingleTop = true } },
                     icon = { Icon(Icons.Default.PersonAdd, contentDescription = "Criar") },
                     label = { Text("Criar", maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 )
@@ -237,14 +237,14 @@ fun FamilyCreateViewContent(
                 // ✅ Nesta view estamos nas Famílias
                 NavigationBarItem(
                     selected = true,
-                    onClick = { navController.navigate(AppConstansts.families) { launchSingleTop = true } },
+                    onClick = { navController.navigate(AppConstants.families) { launchSingleTop = true } },
                     icon = { Icon(Icons.Default.People, contentDescription = "Famílias") },
                     label = { Text("Famílias", maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 )
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = { navController.navigate(AppConstansts.adminHome) { launchSingleTop = true } },
+                    onClick = { navController.navigate(AppConstants.adminHome) { launchSingleTop = true } },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Admin") },
                     label = { Text("Admin", maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 )

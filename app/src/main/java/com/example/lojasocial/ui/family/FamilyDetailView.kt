@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.lojasocial.AppConstansts
+import com.example.lojasocial.AppConstants
 import com.example.lojasocial.R
 import com.example.lojasocial.ui.theme.LojaSocialTheme
 
@@ -229,12 +229,12 @@ fun FamilyDetailViewContent(
                 selected = selectedTab,
                 onSelect = { tab ->
                     when (tab) {
-                        BottomTab2.Products -> navController.navigate(AppConstansts.products) { launchSingleTop = true }
-                        BottomTab2.Beneficiaries -> navController.navigate(AppConstansts.beneficiaries) { launchSingleTop = true }
-                        BottomTab2.CreateBeneficiary -> navController.navigate(AppConstansts.createBeneficiary) { launchSingleTop = true }
-                        BottomTab2.Families -> navController.navigate(AppConstansts.families) { launchSingleTop = true }
-                        BottomTab2.Profile -> navController.navigate(AppConstansts.profile) { launchSingleTop = true }
-                        BottomTab2.Admin -> navController.navigate(AppConstansts.adminHome) { launchSingleTop = true }
+                        BottomTab2.Products -> navController.navigate(AppConstants.products) { launchSingleTop = true }
+                        BottomTab2.Beneficiaries -> navController.navigate(AppConstants.beneficiaries) { launchSingleTop = true }
+                        BottomTab2.CreateBeneficiary -> navController.navigate(AppConstants.createBeneficiary) { launchSingleTop = true }
+                        BottomTab2.Families -> navController.navigate(AppConstants.families) { launchSingleTop = true }
+                        BottomTab2.Profile -> navController.navigate(AppConstants.profile) { launchSingleTop = true }
+                        BottomTab2.Admin -> navController.navigate(AppConstants.adminHome) { launchSingleTop = true }
                     }
                 }
             )

@@ -34,7 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import com.example.lojasocial.AppConstansts
+import com.example.lojasocial.AppConstants
 import com.example.lojasocial.R
 import com.example.lojasocial.models.Profile
 import com.example.lojasocial.ui.theme.LojaSocialTheme
@@ -487,19 +487,19 @@ fun ProfileViewContent(
                 onSelect = { tab ->
                     when (tab) {
                         BottomTab.Products ->
-                            navController.navigate(AppConstansts.products) { launchSingleTop = true }
+                            navController.navigate(AppConstants.products) { launchSingleTop = true }
 
                         BottomTab.Beneficiaries ->
-                            navController.navigate(AppConstansts.beneficiaries) { launchSingleTop = true }
+                            navController.navigate(AppConstants.beneficiaries) { launchSingleTop = true }
 
                         BottomTab.CreateBeneficiary ->
-                            navController.navigate(AppConstansts.createBeneficiary) { launchSingleTop = true }
+                            navController.navigate(AppConstants.createBeneficiary) { launchSingleTop = true }
 
                         BottomTab.Profile ->
-                            navController.navigate(AppConstansts.profile) { launchSingleTop = true }
+                            navController.navigate(AppConstants.profile) { launchSingleTop = true }
 
                         BottomTab.Admin ->
-                            navController.navigate(AppConstansts.adminHome) { launchSingleTop = true }
+                            navController.navigate(AppConstants.adminHome) { launchSingleTop = true }
                     }
                 }
             )

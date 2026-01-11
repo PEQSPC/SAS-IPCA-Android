@@ -66,32 +66,7 @@ class BeneficiaryDetailViewModel : ViewModel() {
             }
     }
 
-    fun save() {
-        val id = docId ?: return
-        uiState.value = uiState.value.copy(isLoading = true, error = null)
-
-        val data = mapOf(
-            "numeroAluno" to uiState.value.numeroAluno,
-            "nome" to uiState.value.nome,
-            "nif" to uiState.value.nif,
-            "dataNascimento" to uiState.value.dataNascimento,
-            "email" to uiState.value.email,
-            "curso" to uiState.value.curso,
-            "ano" to uiState.value.ano
-        )
-
-        db.collection("beneficiaries")
-            .document(id)
-            .update(data)
-            .addOnSuccessListener {
-                uiState.value = uiState.value.copy(isLoading = false, error = null)
-            }
-            .addOnFailureListener { e ->
-                uiState.value = uiState.value.copy(isLoading = false, error = e.message)
-            }
-    }
-
-    fun save(onSuccess: () -> Unit) {
+    fun save(onSuccess: () -> Unit = {}) {
         val id = docId ?: return
 
         uiState.value = uiState.value.copy(isLoading = true, error = null)

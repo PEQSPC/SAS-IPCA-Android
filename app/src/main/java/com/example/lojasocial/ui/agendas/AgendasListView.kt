@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.lojasocial.AppConstansts
+import com.example.lojasocial.AppConstants
 import com.example.lojasocial.R
 import com.example.lojasocial.models.Agenda
 import com.example.lojasocial.ui.theme.LojaSocialTheme
@@ -80,12 +80,14 @@ fun AgendasListView(
         onDateFromChange = vm::setDateFrom,
         onDateToChange = vm::setDateTo,
         onCreateClick = {
-            navController.navigate(AppConstansts.agendasCreate) { launchSingleTop = true }
+            navController.navigate(AppConstants.agendasCreate) { launchSingleTop = true }
         },
         onOpenClick = { agenda ->
             val id = agenda.docId?.trim().orEmpty()
             if (id.isNotBlank()) {
-                navController.navigate("agendas/detail/$id") { launchSingleTop = true }
+                navController.navigate(
+                    AppConstants.agendasDetail.replace("{docId}", id)
+                ) { launchSingleTop = true }
             }
         }
     )
@@ -322,25 +324,25 @@ fun AgendasListViewContent(
                 onSelect = { tab ->
                     when (tab) {
                         AgendasBottomTab.Products ->
-                            navController.navigate(AppConstansts.products) { launchSingleTop = true }
+                            navController.navigate(AppConstants.products) { launchSingleTop = true }
 
                         AgendasBottomTab.Beneficiaries ->
-                            navController.navigate(AppConstansts.beneficiaries) { launchSingleTop = true }
+                            navController.navigate(AppConstants.beneficiaries) { launchSingleTop = true }
 
                         AgendasBottomTab.CreateBeneficiary ->
-                            navController.navigate(AppConstansts.createBeneficiary) { launchSingleTop = true }
+                            navController.navigate(AppConstants.createBeneficiary) { launchSingleTop = true }
 
                         AgendasBottomTab.Families ->
-                            navController.navigate(AppConstansts.families) { launchSingleTop = true }
+                            navController.navigate(AppConstants.families) { launchSingleTop = true }
 
                         AgendasBottomTab.Agendas ->
-                            navController.navigate(AppConstansts.agendas) { launchSingleTop = true }
+                            navController.navigate(AppConstants.agendas) { launchSingleTop = true }
 
                         AgendasBottomTab.Profile ->
-                            navController.navigate(AppConstansts.profile) { launchSingleTop = true }
+                            navController.navigate(AppConstants.profile) { launchSingleTop = true }
 
                         AgendasBottomTab.Admin ->
-                            navController.navigate(AppConstansts.adminHome) { launchSingleTop = true }
+                            navController.navigate(AppConstants.adminHome) { launchSingleTop = true }
                     }
                 }
             )

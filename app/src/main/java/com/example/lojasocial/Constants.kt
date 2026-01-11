@@ -1,6 +1,6 @@
 package com.example.lojasocial
 
-object AppConstansts {
+object AppConstants {
 
     const val loginRoute = "login"
     const val startPage = "Inicio"
@@ -25,4 +25,6 @@ object AppConstansts {
     const val agendas = "agendas"
     const val agendasCreate = "agendas/create"
     const val agendasDetail = "agendas/detail/{docId}"
+
+    const val carts = "carts"
 }

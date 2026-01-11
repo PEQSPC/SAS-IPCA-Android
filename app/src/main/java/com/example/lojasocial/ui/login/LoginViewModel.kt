@@ -1,5 +1,6 @@
 package com.example.lojasocial.ui.login
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -40,9 +41,11 @@ class LoginViewModel @Inject constructor(
 
 
     fun login(onLoginSuccess: () -> Unit) {
+        Log.d("LoginViewModel", "login() iniciado - username: ${uiState.value.username}")
         uiState.value = uiState.value.copy(isLoading = true)
 
         if (uiState.value.username.isNullOrEmpty()) {
+            Log.w("LoginViewModel", "login() falhou - username vazio")
             uiState.value = uiState.value.copy(
                 error = "Username is required",
                 isLoading = false
@@ -50,18 +53,30 @@ class LoginViewModel @Inject constructor(
         }
 
         if (uiState.value.password.isNullOrEmpty()) {
+            Log.w("LoginViewModel", "login() falhou - password vazio")
             uiState.value = uiState.value.copy(
                 error = "Password is required",
                 isLoading = false
             )
         }
 
-        authRepository.login(
-            uiState.value.username!!,
-            uiState.value.password!!
-        ).onEach {result ->
+        val username = uiState.value.username
+        val password = uiState.value.password
+
+        if (username == null || password == null) {
+            Log.w("LoginViewModel", "login() falhou - username ou password NULL")
+            uiState.value = uiState.value.copy(
+                error = "Username e password são obrigatórios",
+                isLoading = false
+            )
+            return
+        }
+
+        Log.d("LoginViewModel", "Chamando authRepository.login()")
+        authRepository.login(username, password).onEach {result ->
             when(result){
                 is ResultWrapper.Success -> {
+                    Log.d("LoginViewModel", "authRepository.login() SUCCESS - chamando getUser()")
                     uiState.value = uiState.value.copy(
                         error = null,
                         isLoading = false
@@ -69,11 +84,13 @@ class LoginViewModel @Inject constructor(
                     getUser(onLoginSuccess)
                 }
                 is ResultWrapper.Loading -> {
+                    Log.d("LoginViewModel", "authRepository.login() LOADING")
                     uiState.value = uiState.value.copy(
                         isLoading = true
                     )
                 }
                 is ResultWrapper.Error -> {
+                    Log.e("LoginViewModel", "authRepository.login() ERROR: ${result.message}")
                     uiState.value = uiState.value.copy(
                         error = result.message,
                         isLoading = false
@@ -84,25 +101,40 @@ class LoginViewModel @Inject constructor(
     }
 
     fun getUser(onLoginSuccess: () -> Unit) {
+        val uid = FirebaseAuth.getInstance().uid
+        Log.d("LoginViewModel", "getUser() iniciado - uid: $uid")
 
-        val uid = FirebaseAuth.getInstance().uid!!
+        if (uid == null) {
+            Log.e("LoginViewModel", "getUser() falhou - UID é NULL")
+            uiState.value = uiState.value.copy(
+                error = "Erro de autenticação",
+                isLoading = false
+            )
+            return
+        }
 
+        Log.d("LoginViewModel", "Chamando userRepository.get(uid)")
         userRepository.get(uid).onEach {result ->
             when(result){
                 is ResultWrapper.Success -> {
+                    val user = result.data
+                    Log.d("LoginViewModel", "getUser() SUCCESS - userType: '${user?.userType}', name: '${user?.name}'")
                     uiState.value = uiState.value.copy(
                         user = result.data,
                         error = null,
                         isLoading = false
                     )
+                    Log.d("LoginViewModel", "Chamando onLoginSuccess() callback")
                     onLoginSuccess()
                 }
                 is ResultWrapper.Loading -> {
+                    Log.d("LoginViewModel", "getUser() LOADING")
                     uiState.value = uiState.value.copy(
                         isLoading = true
                     )
                 }
                 is ResultWrapper.Error -> {
+                    Log.e("LoginViewModel", "getUser() ERROR: ${result.message}")
                     uiState.value = uiState.value.copy(
                         error = result.message,
                         isLoading = false

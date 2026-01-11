@@ -1,6 +1,8 @@
 package com.example.lojasocial.ui.login
 
+import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.lojasocial.AppConstansts
+import com.example.lojasocial.AppConstants
 import com.example.lojasocial.R
 import com.example.lojasocial.ui.theme.LojaSocialTheme
 
@@ -44,7 +46,9 @@ fun LoginView(
         setPassword = viewModel::setPassword,
         onLogin = {
             viewModel.login {
-                onLoginClick(uiState.user?.userType ?: "")
+                val userType = uiState.user?.userType ?: ""
+                Log.d("LoginView", "Login success - userType: '$userType' (user.name: '${uiState.user?.name}')")
+                onLoginClick(userType)
             }
         },
         modifier = modifier
@@ -68,11 +72,10 @@ fun LoginViewContent(
     Box(modifier = modifier.fillMaxSize()) {
 
         // Fundo
-        Image(
-            painter = painterResource(R.drawable.img),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
         )
 
         Column(
@@ -173,11 +176,12 @@ fun LoginViewContent(
                                 )
                             } else {
                                 Text("Entrar")
+
                             }
                         }
 
                         Button(
-                            onClick = { navController.navigate(AppConstansts.registerRoute) },
+                            onClick = { navController.navigate(AppConstants.registerRoute) },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(46.dp),
