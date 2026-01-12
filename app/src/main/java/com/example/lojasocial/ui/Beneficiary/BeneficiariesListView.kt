@@ -1,6 +1,6 @@
 package com.example.lojasocial.ui.beneficiary
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,16 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.lojasocial.AppConstants
-import com.example.lojasocial.R
 import com.example.lojasocial.models.Beneficiary
 import com.example.lojasocial.ui.theme.LojaSocialTheme
 
@@ -33,8 +29,8 @@ fun BeneficiariesListView(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    val vm: BeneficiariesListViewModel = viewModel()
-    val uiState = vm.uiState.value
+    val vm: BeneficiariesListViewModel = hiltViewModel()
+    val uiState by vm.uiState.collectAsState()
 
     LaunchedEffect(Unit) { vm.fetch() }
 
@@ -67,24 +63,20 @@ fun BeneficiariesListViewContent(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-
-        Image(
-            painter = painterResource(R.drawable.img),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
-        )
-
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
-                .padding(top = 24.dp, bottom = 70.dp)
+                .padding(top = 24.dp, bottom = 16.dp)
         ) {
             Text(
                 text = "Beneficiários",
-                color = Color.White,
+                color = Color.Black,
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
@@ -129,7 +121,7 @@ fun BeneficiariesListViewContent(
             when {
                 uiState.isLoading -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color.White)
+                        CircularProgressIndicator(color = Color(0xFF2E7D32))
                     }
                 }
 
@@ -146,7 +138,7 @@ fun BeneficiariesListViewContent(
                 filtered.isEmpty() -> {
                     Text(
                         text = "Sem beneficiários.",
-                        color = Color.White,
+                        color = Color.Black,
                         modifier = Modifier.padding(12.dp)
                     )
                 }
@@ -161,7 +153,7 @@ fun BeneficiariesListViewContent(
                                 name = item.nome ?: "(Sem nome)",
                                 onClick = { onItemClick(item) }
                             )
-                            Divider(color = Color.White.copy(alpha = 0.22f))
+                            Divider(color = Color.Black.copy(alpha = 0.12f))
                         }
                     }
                 }
@@ -207,7 +199,7 @@ private fun BeneficiaryNameCell(
 
         Text(
             text = name,
-            color = Color.White,
+            color = Color.Black,
             style = MaterialTheme.typography.titleMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

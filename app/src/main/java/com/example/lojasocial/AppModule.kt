@@ -1,5 +1,11 @@
 package com.example.lojasocial
 
+import com.example.lojasocial.core.auth.AuthStateHolder
+import com.example.lojasocial.data.repository.DeliveryRepository
+import com.example.lojasocial.data.repository.DonationRepository
+import com.example.lojasocial.data.repository.DonorRepository
+import com.example.lojasocial.data.repository.StockLotRepository
+import com.example.lojasocial.data.repository.StockMoveRepository
 import com.example.lojasocial.models.AuthRepository
 import com.example.lojasocial.models.LoginRepository
 import com.google.firebase.Firebase
@@ -36,5 +42,44 @@ object AppModule {
             firebaseAuth,
             firestore,
         )
+    }
+
+    @Provides
+    @Singleton
+    fun providesAuthStateHolder(
+        auth: FirebaseAuth,
+        db: FirebaseFirestore
+    ): AuthStateHolder {
+        return AuthStateHolder(auth, db)
+    }
+
+    @Provides
+    @Singleton
+    fun providesDonorRepository(db: FirebaseFirestore): DonorRepository {
+        return DonorRepository(db)
+    }
+
+    @Provides
+    @Singleton
+    fun providesStockLotRepository(db: FirebaseFirestore): StockLotRepository {
+        return StockLotRepository(db)
+    }
+
+    @Provides
+    @Singleton
+    fun providesDonationRepository(db: FirebaseFirestore): DonationRepository {
+        return DonationRepository(db)
+    }
+
+    @Provides
+    @Singleton
+    fun providesDeliveryRepository(db: FirebaseFirestore): DeliveryRepository {
+        return DeliveryRepository(db)
+    }
+
+    @Provides
+    @Singleton
+    fun providesStockMoveRepository(db: FirebaseFirestore): StockMoveRepository {
+        return StockMoveRepository(db)
     }
 }

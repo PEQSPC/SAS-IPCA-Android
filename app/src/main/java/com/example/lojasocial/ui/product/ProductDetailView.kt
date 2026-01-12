@@ -32,11 +32,11 @@ fun ProductDetailView(
     val vm: ProductDetailViewModel = viewModel()
     val uiState = vm.uiState.value
 
-    // ✅ normaliza docId (evita "{docId}" e strings vazias)
+    //  normaliza docId (evita "{docId}" e strings vazias)
     val cleanDocId = docId?.trim()?.takeIf { it.isNotBlank() && it != "{docId}" }
     val isEditMode = cleanDocId != null
 
-    // ✅ quando muda de rota: se for editar -> fetch; se for criar -> reset
+    //  quando muda de rota: se for editar -> fetch; se for criar -> reset
     LaunchedEffect(cleanDocId) {
         if (isEditMode) {
             vm.setDocId(cleanDocId)

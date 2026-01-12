@@ -1,32 +1,39 @@
 package com.example.lojasocial.ui.beneficiary
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.lojasocial.models.Beneficiary
-import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.firestore
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class BeneficiariesListViewModel : ViewModel() {
+@HiltViewModel
+class BeneficiariesListViewModel @Inject constructor(
+    private val db: FirebaseFirestore
+) : ViewModel() {
 
-    private val db = Firebase.firestore
     private var listener: ListenerRegistration? = null
 
-    var uiState = mutableStateOf(BeneficiariesListState())
-        private set
+    private val _uiState = MutableStateFlow(BeneficiariesListState())
+    val uiState: StateFlow<BeneficiariesListState> = _uiState.asStateFlow()
 
     fun setSearch(text: String) {
-        uiState.value = uiState.value.copy(search = text)
+        _uiState.value = _uiState.value.copy(search = text)
     }
 
     fun fetch() {
-        uiState.value = uiState.value.copy(isLoading = true, error = null)
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
         listener?.remove()
         listener = db.collection("beneficiaries")
             .addSnapshotListener { result, error ->
                 if (error != null) {
-                    uiState.value = uiState.value.copy(
+                    _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = error.message
                     )
@@ -42,7 +49,7 @@ class BeneficiariesListViewModel : ViewModel() {
                     }
                 }
 
-                uiState.value = uiState.value.copy(
+                _uiState.value = _uiState.value.copy(
                     items = list.sortedBy { it.nome ?: "" },
                     isLoading = false,
                     error = null

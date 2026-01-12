@@ -1,7 +1,7 @@
 package com.example.lojasocial.ui.agendas
 
 import android.app.DatePickerDialog
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -10,31 +10,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.lojasocial.AppConstants
-import com.example.lojasocial.R
 import com.example.lojasocial.models.Agenda
 import com.example.lojasocial.ui.theme.LojaSocialTheme
 import java.util.Calendar
@@ -52,12 +41,6 @@ data class AgendasListState(
     val error: String? = null
 )
 
-// ------------ BOTTOM NAV (local a esta view) ------------
-
-private enum class AgendasBottomTab {
-    Products, Beneficiaries, CreateBeneficiary, Families, Agendas, Profile, Admin
-}
-
 // ------------ VIEW ------------
 
 @Composable
@@ -65,8 +48,8 @@ fun AgendasListView(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    val vm: AgendasListViewModel = viewModel()
-    val uiState = vm.uiState.value
+    val vm: AgendasListViewModel = hiltViewModel()
+    val uiState by vm.uiState.collectAsState()
 
     LaunchedEffect(Unit) { vm.fetch() }
 
@@ -106,8 +89,6 @@ fun AgendasListViewContent(
     onCreateClick: () -> Unit = {},
     onOpenClick: (Agenda) -> Unit = {}
 ) {
-    val selectedTab = AgendasBottomTab.Agendas
-    val green = Color(0xFF2E7D32)
     val context = LocalContext.current
 
     // ✅ Filtrar (mantém os teus filtros, mas a lista mostra só Nome + Data)
@@ -145,70 +126,58 @@ fun AgendasListViewContent(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .padding(top = 24.dp, bottom = 16.dp)
+        ) {
+            Text(
+                text = "Agendas",
+                color = Color.Black,
+                style = MaterialTheme.typography.titleLarge
+            )
 
-        // Fundo
-        Image(
-            painter = painterResource(R.drawable.img),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
-        )
+            Spacer(modifier = Modifier.height(14.dp))
 
-        Column(modifier = Modifier.fillMaxSize()) {
-
-            // Conteúdo (SEM CARD BRANCO)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 70.dp, bottom = 12.dp)
+            // PESQUISA + NOVO
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Agendas",
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleLarge
+                OutlinedTextField(
+                    value = uiState.search,
+                    onValueChange = onSearchChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Pesquisar por nome...") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    )
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                // PESQUISA + NOVO
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = uiState.search,
-                        onValueChange = onSearchChange,
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Pesquisar por nome...") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black,
-                            cursorColor = green,
-                            focusedBorderColor = green,
-                            unfocusedBorderColor = green.copy(alpha = 0.75f),
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
-                        )
+                Button(
+                    onClick = onCreateClick,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF0B1220),
+                        contentColor = Color.White
                     )
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Button(
-                        onClick = onCreateClick,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF0B1220),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("+ Novo")
-                    }
+                ) {
+                    Text("+ Novo")
                 }
+            }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -257,95 +226,62 @@ fun AgendasListViewContent(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Cabeçalho (só Nome + Data)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 6.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    HeaderCell("Nome", 0.65f)
-                    HeaderCell("Data", 0.35f, alignEnd = true)
+            // Cabeçalho (só Nome + Data)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HeaderCell("Nome", 0.65f)
+                HeaderCell("Data", 0.35f, alignEnd = true)
+            }
+
+            Divider(color = Color.Black.copy(alpha = 0.12f))
+
+            when {
+                uiState.isLoading -> {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFF2E7D32))
+                    }
                 }
 
-                Divider(color = Color.White.copy(alpha = 0.22f))
+                uiState.error != null -> {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = uiState.error ?: "",
+                        color = Color.Red,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
 
-                when {
-                    uiState.isLoading -> {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color.White)
-                        }
-                    }
+                filtered.isEmpty() -> {
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Text(
+                        text = "Sem agendas. Carrega em + Novo para adicionar.",
+                        color = Color.Black,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
 
-                    uiState.error != null -> {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = uiState.error ?: "",
-                            color = Color.Red,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-
-                    filtered.isEmpty() -> {
-                        Spacer(modifier = Modifier.height(18.dp))
-                        Text(
-                            text = "Sem agendas. Carrega em + Novo para adicionar.",
-                            color = Color.White,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-
-                    else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 6.dp)
-                        ) {
-                            items(filtered) { item ->
-                                AgendaRow(
-                                    item = item,
-                                    onOpen = { onOpenClick(item) }
-                                )
-                                Divider(color = Color.White.copy(alpha = 0.18f))
-                            }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 6.dp)
+                    ) {
+                        items(filtered) { item ->
+                            AgendaRow(
+                                item = item,
+                                onOpen = { onOpenClick(item) }
+                            )
+                            Divider(color = Color.Black.copy(alpha = 0.12f))
                         }
                     }
                 }
             }
-
-            // Bottom bar (local)
-            AgendasBottomBar(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
-                selected = selectedTab,
-                onSelect = { tab ->
-                    when (tab) {
-                        AgendasBottomTab.Products ->
-                            navController.navigate(AppConstants.products) { launchSingleTop = true }
-
-                        AgendasBottomTab.Beneficiaries ->
-                            navController.navigate(AppConstants.beneficiaries) { launchSingleTop = true }
-
-                        AgendasBottomTab.CreateBeneficiary ->
-                            navController.navigate(AppConstants.createBeneficiary) { launchSingleTop = true }
-
-                        AgendasBottomTab.Families ->
-                            navController.navigate(AppConstants.families) { launchSingleTop = true }
-
-                        AgendasBottomTab.Agendas ->
-                            navController.navigate(AppConstants.agendas) { launchSingleTop = true }
-
-                        AgendasBottomTab.Profile ->
-                            navController.navigate(AppConstants.profile) { launchSingleTop = true }
-
-                        AgendasBottomTab.Admin ->
-                            navController.navigate(AppConstants.adminHome) { launchSingleTop = true }
-                    }
-                }
-            )
         }
     }
 }
@@ -358,7 +294,7 @@ private fun HeaderCell(
 ) {
     Text(
         text = text,
-        color = Color.White.copy(alpha = 0.85f),
+        color = Color.Black.copy(alpha = 0.6f),
         style = MaterialTheme.typography.bodySmall,
         fontWeight = FontWeight.SemiBold,
         maxLines = 1,
@@ -382,7 +318,7 @@ private fun AgendaRow(
         Text(
             text = item.entity?.ifBlank { "—" } ?: "—",
             modifier = Modifier.weight(0.65f),
-            color = Color.White,
+            color = Color.Black,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -390,7 +326,7 @@ private fun AgendaRow(
         Text(
             text = item.date?.ifBlank { "—" } ?: "—",
             modifier = Modifier.weight(0.35f),
-            color = Color.White,
+            color = Color.Black,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.End
@@ -496,47 +432,6 @@ private fun DateField(
     )
 }
 
-// ------------ BOTTOM BAR ------------
-
-@Composable
-private fun AgendasBottomBar(
-    modifier: Modifier = Modifier,
-    selected: AgendasBottomTab,
-    onSelect: (AgendasBottomTab) -> Unit
-) {
-    NavigationBar(
-        modifier = modifier.height(80.dp),
-        containerColor = Color(0xFFDFF3E3),
-        tonalElevation = 6.dp,
-        windowInsets = WindowInsets(0)
-    ) {
-        NavItem(AgendasBottomTab.Products, selected, Icons.Default.Inventory2, "Produtos", onSelect)
-        NavItem(AgendasBottomTab.Beneficiaries, selected, Icons.Default.Group, "Benef.", onSelect)
-        NavItem(AgendasBottomTab.CreateBeneficiary, selected, Icons.Default.PersonAdd, "Criar", onSelect)
-        NavItem(AgendasBottomTab.Families, selected, Icons.Default.People, "Famílias", onSelect)
-        NavItem(AgendasBottomTab.Agendas, selected, Icons.Default.CalendarMonth, "Agendas", onSelect)
-        NavItem(AgendasBottomTab.Profile, selected, Icons.Default.Person, "Perfil", onSelect)
-        NavItem(AgendasBottomTab.Admin, selected, Icons.Default.Home, "Admin", onSelect)
-    }
-}
-
-@Composable
-private fun RowScope.NavItem(
-    tab: AgendasBottomTab,
-    selected: AgendasBottomTab,
-    icon: ImageVector,
-    label: String,
-    onSelect: (AgendasBottomTab) -> Unit
-) {
-    NavigationBarItem(
-        selected = tab == selected,
-        onClick = { onSelect(tab) },
-        alwaysShowLabel = true,
-        icon = { Icon(icon, contentDescription = label) },
-        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-    )
-}
-
 // clickable sem ripple (para overlays)
 @Composable
 private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
@@ -552,7 +447,7 @@ private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
 fun AgendasListViewPreview() {
     LojaSocialTheme {
         AgendasListViewContent(
-            navController = rememberNavController(),
+            navController = androidx.navigation.compose.rememberNavController(),
             uiState = AgendasListState(
                 items = listOf(
                     Agenda(docId = "1", date = "2025-11-15", entity = "Maria Alves"),

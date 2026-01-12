@@ -1,12 +1,17 @@
 package com.example.lojasocial.ui.perfil
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.lojasocial.core.auth.AuthStateHolder
 import com.example.lojasocial.models.Profile
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.util.Calendar
+import javax.inject.Inject
 
 data class ProfileState(
     val profile: Profile = Profile(),
@@ -18,86 +23,90 @@ data class ProfileState(
     val isSaved: Boolean = false
 )
 
-class ProfileViewModel : ViewModel() {
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
+    private val authStateHolder: AuthStateHolder,
+    private val db: FirebaseFirestore
+) : ViewModel() {
 
-    var uiState = mutableStateOf(ProfileState())
-        private set
-
-    private val db = Firebase.firestore
+    private val _uiState = MutableStateFlow(ProfileState())
+    val uiState: StateFlow<ProfileState> = _uiState.asStateFlow()
 
     fun loadProfile() {
-        val uid = Firebase.auth.currentUser?.uid ?: run {
-            uiState.value = uiState.value.copy(
-                error = "Utilizador não autenticado",
-                isLoading = false
-            )
-            return
+        viewModelScope.launch {
+            val uid = authStateHolder.currentUser.value?.docId ?: run {
+                _uiState.value = _uiState.value.copy(
+                    error = "Utilizador não autenticado",
+                    isLoading = false
+                )
+                return@launch
+            }
+
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            db.collection("profiles")
+                .document(uid)
+                .get()
+                .addOnSuccessListener { doc ->
+                    val profile = doc.toObject(Profile::class.java) ?: Profile()
+                    val birthDateStr = doc.getString("birthDate")
+
+                    _uiState.value = _uiState.value.copy(
+                        profile = profile,
+                        idadeText = birthDateStr ?: "",
+                        nifText = profile.nif?.toString() ?: "",
+                        photoUri = doc.getString("photoUri"),
+                        isLoading = false,
+                        error = null,
+                        isSaved = false
+                    )
+                }
+                .addOnFailureListener {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = it.message
+                    )
+                }
         }
-
-        uiState.value = uiState.value.copy(isLoading = true)
-
-        db.collection("profiles")
-            .document(uid)
-            .get()
-            .addOnSuccessListener { doc ->
-                val profile = doc.toObject(Profile::class.java) ?: Profile()
-                val birthDateStr = doc.getString("birthDate")
-
-                uiState.value = uiState.value.copy(
-                    profile = profile,
-                    idadeText = birthDateStr ?: "",
-                    nifText = profile.nif?.toString() ?: "",
-                    photoUri = doc.getString("photoUri"),
-                    isLoading = false,
-                    error = null,
-                    isSaved = false
-                )
-            }
-            .addOnFailureListener {
-                uiState.value = uiState.value.copy(
-                    isLoading = false,
-                    error = it.message
-                )
-            }
     }
 
     fun setNome(v: String) {
-        uiState.value = uiState.value.copy(
-            profile = uiState.value.profile.copy(nome = v),
+        _uiState.value = _uiState.value.copy(
+            profile = _uiState.value.profile.copy(nome = v),
             isSaved = false
         )
     }
 
     fun setSobrenome(v: String) {
-        uiState.value = uiState.value.copy(
-            profile = uiState.value.profile.copy(sobrenome = v),
+        _uiState.value = _uiState.value.copy(
+            profile = _uiState.value.profile.copy(sobrenome = v),
             isSaved = false
         )
     }
 
     fun setGenero(v: String) {
-        uiState.value = uiState.value.copy(
-            profile = uiState.value.profile.copy(genero = v),
+        _uiState.value = _uiState.value.copy(
+            profile = _uiState.value.profile.copy(genero = v),
             isSaved = false
         )
     }
 
     fun setIdadeText(v: String) {
-        uiState.value = uiState.value.copy(
+        _uiState.value = _uiState.value.copy(
             idadeText = v,
             isSaved = false
         )
     }
 
     fun setNifText(v: String) {
-        uiState.value = uiState.value.copy(
+        _uiState.value = _uiState.value.copy(
             nifText = v,
             isSaved = false
         )
     }
 
     fun setPhotoUri(uri: String?) {
-        uiState.value = uiState.value.copy(
+        _uiState.value = _uiState.value.copy(
             photoUri = uri,
             isSaved = false
         )
@@ -131,47 +140,49 @@ class ProfileViewModel : ViewModel() {
     }
 
     fun saveProfile() {
-        val uid = Firebase.auth.currentUser?.uid ?: run {
-            uiState.value = uiState.value.copy(error = "Utilizador não autenticado")
-            return
+        viewModelScope.launch {
+            val uid = authStateHolder.currentUser.value?.docId ?: run {
+                _uiState.value = _uiState.value.copy(error = "Utilizador não autenticado")
+                return@launch
+            }
+
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            val idadeCalculada = calcularIdade(_uiState.value.idadeText)
+            val nifInt = _uiState.value.nifText.toIntOrNull()
+
+            val profileToSave = _uiState.value.profile.copy(
+                idade = idadeCalculada,
+                nif = nifInt
+            )
+
+            val dataMap = hashMapOf(
+                "nome" to profileToSave.nome,
+                "sobrenome" to profileToSave.sobrenome,
+                "genero" to profileToSave.genero,
+                "idade" to profileToSave.idade,
+                "nif" to profileToSave.nif,
+                "birthDate" to _uiState.value.idadeText,   // guardamos a data real
+                "photoUri" to _uiState.value.photoUri
+            )
+
+            db.collection("profiles")
+                .document(uid)
+                .set(dataMap)
+                .addOnSuccessListener {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isSaved = true,
+                        error = null
+                    )
+                }
+                .addOnFailureListener {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isSaved = false,
+                        error = it.message
+                    )
+                }
         }
-
-        uiState.value = uiState.value.copy(isLoading = true)
-
-        val idadeCalculada = calcularIdade(uiState.value.idadeText)
-        val nifInt = uiState.value.nifText.toIntOrNull()
-
-        val profileToSave = uiState.value.profile.copy(
-            idade = idadeCalculada,
-            nif = nifInt
-        )
-
-        val dataMap = hashMapOf(
-            "nome" to profileToSave.nome,
-            "sobrenome" to profileToSave.sobrenome,
-            "genero" to profileToSave.genero,
-            "idade" to profileToSave.idade,
-            "nif" to profileToSave.nif,
-            "birthDate" to uiState.value.idadeText,   // guardamos a data real
-            "photoUri" to uiState.value.photoUri
-        )
-
-        db.collection("profiles")
-            .document(uid)
-            .set(dataMap)
-            .addOnSuccessListener {
-                uiState.value = uiState.value.copy(
-                    isLoading = false,
-                    isSaved = true,
-                    error = null
-                )
-            }
-            .addOnFailureListener {
-                uiState.value = uiState.value.copy(
-                    isLoading = false,
-                    isSaved = false,
-                    error = it.message
-                )
-            }
     }
 }

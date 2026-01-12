@@ -26,5 +26,21 @@ object AppConstants {
     const val agendasCreate = "agendas/create"
     const val agendasDetail = "agendas/detail/{docId}"
 
+    const val donors = "donors"
+    const val createDonor = "donors/create"
+    const val donorDetail = "donors/detail/{docId}"
+
+    const val donations = "donations"
+    const val createDonation = "donations/create"
+    const val donationDetail = "donations/detail/{docId}"
+
+    const val deliveries = "deliveries"
+    const val createDelivery = "deliveries/create"
+    const val deliveryDetail = "deliveries/detail/{docId}"
+
+    const val stock = "stock"
+    const val stockLots = "stock/lots/{itemId}"
+    const val stockMoves = "stock/moves"
+
     const val carts = "carts"
 }

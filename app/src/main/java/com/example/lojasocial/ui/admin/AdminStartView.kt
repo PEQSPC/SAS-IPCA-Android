@@ -18,30 +18,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.lojasocial.AppConstants
 import com.example.lojasocial.R
-import com.example.lojasocial.models.Product
-import com.example.lojasocial.ui.Start.ProductState
-import com.example.lojasocial.ui.Start.StartProductViewModel
 import com.example.lojasocial.ui.theme.LojaSocialTheme
-
-private enum class AdminTab {
-    Products, Beneficiaries, Create, Families, Agendas, Profile
-}
 
 @Composable
 fun AdminStartView(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    val productViewModel: StartProductViewModel = viewModel()
-    val uiState by productViewModel.uiState
+    val viewModel: AdminStartViewModel = hiltViewModel()
+    val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        productViewModel.loadProduct(productId = 1)
+        viewModel.loadNews(limit = 5)
     }
 
     AdminStartViewContent(
@@ -52,23 +45,23 @@ fun AdminStartView(
         onCreateBeneficiaryClick = { navController.navigate(AppConstants.createBeneficiary) },
         onFamiliesClick = { navController.navigate(AppConstants.families) },
         onAgendasClick = { navController.navigate(AppConstants.agendas) },
-        onProfileClick = { navController.navigate(AppConstants.profile) }
+        onProfileClick = { navController.navigate(AppConstants.profile) },
+        onLogoutClick = { viewModel.logout() }
     )
 }
 
 @Composable
 fun AdminStartViewContent(
     modifier: Modifier = Modifier,
-    uiState: ProductState,
+    uiState: AdminStartState,
     onProductsClick: () -> Unit = {},
     onBeneficiariesClick: () -> Unit = {},
     onCreateBeneficiaryClick: () -> Unit = {},
     onFamiliesClick: () -> Unit = {},
     onAgendasClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
 ) {
-    var selectedTab by remember { mutableStateOf(AdminTab.Products) }
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -88,7 +81,30 @@ fun AdminStartViewContent(
                 contentScale = ContentScale.Fit
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Welcome message with user name
+            uiState.user?.let { user ->
+                Text(
+                    text = "Olá, ${user.name}!",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Logout button
+            Button(
+                onClick = onLogoutClick,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) {
+                Icon(Icons.Default.Logout, contentDescription = "Logout")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Logout")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Box(
                 modifier = Modifier
@@ -100,7 +116,7 @@ fun AdminStartViewContent(
                     uiState.isLoading -> {
                         CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("A carregar produto…")
+                        Text("A carregar notícias…")
                     }
 
                     uiState.error != null -> {
@@ -111,37 +127,23 @@ fun AdminStartViewContent(
                         )
                     }
 
-                    uiState.product != null -> {
-                        ProductCard(uiState.product)
+                    uiState.news.isNotEmpty() -> {
+                        NewsCard(uiState.news.first())
                     }
 
                     else -> {
-                        Text("Nenhum produto disponível.")
+                        Text("Nenhuma notícia disponível.")
                     }
                 }
             }
 
-            AdminBottomBar(
-                modifier = Modifier.fillMaxWidth(),
-                selected = selectedTab,
-                onSelect = { tab ->
-                    selectedTab = tab
-                    when (tab) {
-                        AdminTab.Products -> onProductsClick()
-                        AdminTab.Beneficiaries -> onBeneficiariesClick()
-                        AdminTab.Create -> onCreateBeneficiaryClick()
-                        AdminTab.Families -> onFamiliesClick()
-                        AdminTab.Agendas -> onAgendasClick()
-                        AdminTab.Profile -> onProfileClick()
-                    }
-                }
-            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-private fun ProductCard(product: Product) {
+private fun NewsCard(news: News) {
     Card(
         modifier = Modifier
             .padding(16.dp)
@@ -151,88 +153,23 @@ private fun ProductCard(product: Product) {
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
-
             Text(
-                "Produto em destaque",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            AsyncImage(
-                model = product.thumbnail,
-                contentDescription = product.title,
-                modifier = Modifier
-                    .height(140.dp)
-                    .fillMaxWidth()
-                    .background(Color.White),
-                contentScale = ContentScale.Fit,
-                placeholder = painterResource(R.drawable.ic_placeholder),
-                error = painterResource(R.drawable.ic_error)
+                text = news.title,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Start
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                product.title ?: "",
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center
-            )
-
-            Text("Categoria: ${product.category ?: "-"}")
-            Text("Preço: ${product.price ?: 0.0} €")
-
-            product.description?.let {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(it, textAlign = TextAlign.Center)
-            }
-        }
-    }
-}
-
-@Composable
-private fun AdminBottomBar(
-    modifier: Modifier = Modifier,
-    selected: AdminTab,
-    onSelect: (AdminTab) -> Unit
-) {
-    NavigationBar(
-        modifier = modifier.height(80.dp),
-        containerColor = Color(0xFFDFF3E3),
-        tonalElevation = 6.dp
-    ) {
-        AdminBottomItem(AdminTab.Products, selected, Icons.Default.Inventory2, "Produtos", onSelect)
-        AdminBottomItem(AdminTab.Beneficiaries, selected, Icons.Default.Group, "Beneficiários", onSelect)
-        AdminBottomItem(AdminTab.Create, selected, Icons.Default.AddCircle, "Criar", onSelect)
-        AdminBottomItem(AdminTab.Families, selected, Icons.Default.Folder, "Famílias", onSelect)
-        AdminBottomItem(AdminTab.Agendas, selected, Icons.Default.CalendarMonth, "Agendas", onSelect)
-        AdminBottomItem(AdminTab.Profile, selected, Icons.Default.Person, "Perfil", onSelect)
-    }
-}
-
-@Composable
-private fun RowScope.AdminBottomItem(
-    tab: AdminTab,
-    selected: AdminTab,
-    icon: ImageVector,
-    label: String,
-    onSelect: (AdminTab) -> Unit
-) {
-    NavigationBarItem(
-        selected = tab == selected,
-        onClick = { onSelect(tab) },
-        icon = { Icon(icon, contentDescription = label) },
-        label = {
-            Text(
-                label,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 10.sp
+                text = news.body,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Start
             )
         }
-    )
+    }
 }
 
 @Preview(showBackground = true)
@@ -240,13 +177,13 @@ private fun RowScope.AdminBottomItem(
 fun AdminStartViewPreview() {
     LojaSocialTheme {
         AdminStartViewContent(
-            uiState = ProductState(
-                product = Product(
-                    title = "Produto Exemplo",
-                    category = "Categoria X",
-                    description = "Descrição de teste",
-                    price = 19.99,
-                    thumbnail = "https://dummyjson.com/image/i/products/1/thumbnail.jpg"
+            uiState = AdminStartState(
+                user = null,
+                news = listOf(
+                    News(
+                        title = "Notícia Exemplo",
+                        body = "Esta é uma notícia de teste para demonstração."
+                    )
                 ),
                 isLoading = false,
                 error = null

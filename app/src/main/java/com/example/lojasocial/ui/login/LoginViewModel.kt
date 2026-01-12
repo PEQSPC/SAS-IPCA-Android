@@ -4,13 +4,10 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lojasocial.models.AuthRepository
+import com.example.lojasocial.core.auth.AuthStateHolder
 import com.example.lojasocial.models.LoginRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.example.lojasocial.models.ResultWrapper
-import com.example.lojasocial.models.User
-import com.example.lojasocial.models.UserRepository
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
@@ -18,14 +15,13 @@ import javax.inject.Inject
 data class LoginState(
     var username: String? = null,
     var password: String?  = null,
-    var user : User? = null,
     var error: String? = null,
     var isLoading: Boolean? = null
 )
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     val authRepository: LoginRepository,
-    val userRepository: UserRepository
+    private val authStateHolder: AuthStateHolder
 ): ViewModel() {
 
     var uiState = mutableStateOf(LoginState())
@@ -40,7 +36,7 @@ class LoginViewModel @Inject constructor(
     }
 
 
-    fun login(onLoginSuccess: () -> Unit) {
+    fun login() {
         Log.d("LoginViewModel", "login() iniciado - username: ${uiState.value.username}")
         uiState.value = uiState.value.copy(isLoading = true)
 
@@ -50,6 +46,7 @@ class LoginViewModel @Inject constructor(
                 error = "Username is required",
                 isLoading = false
             )
+            return
         }
 
         if (uiState.value.password.isNullOrEmpty()) {
@@ -58,6 +55,7 @@ class LoginViewModel @Inject constructor(
                 error = "Password is required",
                 isLoading = false
             )
+            return
         }
 
         val username = uiState.value.username
@@ -76,12 +74,13 @@ class LoginViewModel @Inject constructor(
         authRepository.login(username, password).onEach {result ->
             when(result){
                 is ResultWrapper.Success -> {
-                    Log.d("LoginViewModel", "authRepository.login() SUCCESS - chamando getUser()")
+                    Log.d("LoginViewModel", "authRepository.login() SUCCESS - refreshing AuthStateHolder")
                     uiState.value = uiState.value.copy(
                         error = null,
                         isLoading = false
                     )
-                    getUser(onLoginSuccess)
+                    // AuthStateHolder will automatically load user data and trigger navigation
+                    authStateHolder.refresh()
                 }
                 is ResultWrapper.Loading -> {
                     Log.d("LoginViewModel", "authRepository.login() LOADING")
@@ -91,50 +90,6 @@ class LoginViewModel @Inject constructor(
                 }
                 is ResultWrapper.Error -> {
                     Log.e("LoginViewModel", "authRepository.login() ERROR: ${result.message}")
-                    uiState.value = uiState.value.copy(
-                        error = result.message,
-                        isLoading = false
-                    )
-                }
-            }
-        }.launchIn(viewModelScope)
-    }
-
-    fun getUser(onLoginSuccess: () -> Unit) {
-        val uid = FirebaseAuth.getInstance().uid
-        Log.d("LoginViewModel", "getUser() iniciado - uid: $uid")
-
-        if (uid == null) {
-            Log.e("LoginViewModel", "getUser() falhou - UID é NULL")
-            uiState.value = uiState.value.copy(
-                error = "Erro de autenticação",
-                isLoading = false
-            )
-            return
-        }
-
-        Log.d("LoginViewModel", "Chamando userRepository.get(uid)")
-        userRepository.get(uid).onEach {result ->
-            when(result){
-                is ResultWrapper.Success -> {
-                    val user = result.data
-                    Log.d("LoginViewModel", "getUser() SUCCESS - userType: '${user?.userType}', name: '${user?.name}'")
-                    uiState.value = uiState.value.copy(
-                        user = result.data,
-                        error = null,
-                        isLoading = false
-                    )
-                    Log.d("LoginViewModel", "Chamando onLoginSuccess() callback")
-                    onLoginSuccess()
-                }
-                is ResultWrapper.Loading -> {
-                    Log.d("LoginViewModel", "getUser() LOADING")
-                    uiState.value = uiState.value.copy(
-                        isLoading = true
-                    )
-                }
-                is ResultWrapper.Error -> {
-                    Log.e("LoginViewModel", "getUser() ERROR: ${result.message}")
                     uiState.value = uiState.value.copy(
                         error = result.message,
                         isLoading = false

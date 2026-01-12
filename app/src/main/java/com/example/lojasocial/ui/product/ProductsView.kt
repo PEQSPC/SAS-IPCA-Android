@@ -1,6 +1,6 @@
 package com.example.lojasocial.ui.products
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,30 +9,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.example.lojasocial.AppConstants
-import com.example.lojasocial.R
 import com.example.lojasocial.models.Products
 import com.example.lojasocial.ui.theme.LojaSocialTheme
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
 
 // ---------------- STATE ----------------
 
@@ -44,19 +42,24 @@ data class ProductsListState(
 
 // ---------------- VIEWMODEL ----------------
 
-class ProductsViewModel : ViewModel() {
-    private val db = Firebase.firestore
+@HiltViewModel
+class ProductsViewModel @Inject constructor(
+    private val db: FirebaseFirestore
+) : ViewModel() {
 
-    var uiState = mutableStateOf(ProductsListState())
-        private set
+    private var listener: ListenerRegistration? = null
+
+    private val _uiState = MutableStateFlow(ProductsListState())
+    val uiState: StateFlow<ProductsListState> = _uiState.asStateFlow()
 
     fun fetch() {
-        uiState.value = uiState.value.copy(isLoading = true, error = null)
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-        db.collection("products")
+        listener?.remove()
+        listener = db.collection("products")
             .addSnapshotListener { result, error ->
                 if (error != null) {
-                    uiState.value = uiState.value.copy(
+                    _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = error.message
                     )
@@ -70,63 +73,18 @@ class ProductsViewModel : ViewModel() {
                     if (p != null) list.add(p)
                 }
 
-                uiState.value = uiState.value.copy(
+                _uiState.value = _uiState.value.copy(
                     products = list.sortedBy { it.name ?: "" },
                     isLoading = false,
                     error = null
                 )
             }
     }
-}
 
-// ---------------- BOTTOM NAV ----------------
-
-private enum class BottomTab {
-    Products, Beneficiaries, CreateBeneficiary, Admin
-}
-
-@Composable
-private fun ProductsBottomBar(
-    modifier: Modifier = Modifier,
-    selected: BottomTab,
-    onSelect: (BottomTab) -> Unit
-) {
-    NavigationBar(
-        modifier = modifier.height(80.dp),
-        containerColor = Color(0xFFDFF3E3),
-        tonalElevation = 6.dp,
-        windowInsets = WindowInsets(0)
-    ) {
-        BottomItem(BottomTab.Products, selected, Icons.Default.Inventory2, "Produtos", onSelect)
-        BottomItem(BottomTab.Beneficiaries, selected, Icons.Default.Group, "Benef.", onSelect)
-        BottomItem(BottomTab.CreateBeneficiary, selected, Icons.Default.PersonAdd, "Criar", onSelect)
-        BottomItem(BottomTab.Admin, selected, Icons.Default.Home, "Admin", onSelect)
+    override fun onCleared() {
+        listener?.remove()
+        super.onCleared()
     }
-}
-
-@Composable
-private fun RowScope.BottomItem(
-    tab: BottomTab,
-    selected: BottomTab,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onSelect: (BottomTab) -> Unit
-) {
-    val isSelected = tab == selected
-
-    NavigationBarItem(
-        selected = isSelected,
-        onClick = { onSelect(tab) },
-        alwaysShowLabel = true,
-        icon = { Icon(icon, contentDescription = label) },
-        label = {
-            Text(
-                text = label,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    )
 }
 
 // ---------------- VIEW ----------------
@@ -136,8 +94,8 @@ fun ProductsView(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    val vm: ProductsViewModel = viewModel()
-    val uiState = vm.uiState.value
+    val vm: ProductsViewModel = hiltViewModel()
+    val uiState by vm.uiState.collectAsState()
 
     LaunchedEffect(Unit) { vm.fetch() }
 
@@ -171,102 +129,73 @@ fun ProductsViewContent(
     onAddClick: () -> Unit = {},
     onProductClick: (Products) -> Unit = {}
 ) {
-    val selectedTab = BottomTab.Products
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .padding(top = 24.dp, bottom = 16.dp)
+        ) {
+            Text(
+                text = "Produtos",
+                color = Color.Black,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 14.dp)
+            )
 
-    Box(modifier = modifier.fillMaxSize()) {
-
-        Image(
-            painter = painterResource(R.drawable.img),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        Column(modifier = Modifier.fillMaxSize()) {
-
-            // ---------- CONTEÚDO (acima da bottom bar) ----------
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 20.dp, bottom = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-                Text(
-                    text = "Produtos",
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                Spacer(Modifier.height(14.dp))
-
-                when {
-                    uiState.isLoading -> {
-                        Spacer(Modifier.weight(1f))
-                        CircularProgressIndicator(color = Color.White)
-                        Spacer(Modifier.weight(1f))
+            when {
+                uiState.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFF2E7D32))
                     }
+                }
 
-                    uiState.error != null -> {
-                        Spacer(Modifier.weight(1f))
+                uiState.error != null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
                             text = uiState.error ?: "",
                             color = Color.Red,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(Modifier.weight(1f))
                     }
+                }
 
-                    uiState.products.isEmpty() -> {
-                        Spacer(Modifier.weight(1f))
+                uiState.products.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
                             text = "Sem produtos.",
-                            color = Color.White
+                            color = Color.Black
                         )
-                        Spacer(Modifier.weight(1f))
                     }
+                }
 
-                    else -> {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(uiState.products) { p ->
-                                ProductRow(
-                                    product = p,
-                                    onClick = { onProductClick(p) }
-                                )
-                            }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 12.dp)
+                    ) {
+                        items(uiState.products) { p ->
+                            ProductRow(
+                                product = p,
+                                onClick = { onProductClick(p) }
+                            )
                         }
                     }
                 }
             }
-
-            // ---------- BOTTOM BAR ----------
-            ProductsBottomBar(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
-                selected = selectedTab,
-                onSelect = { tab ->
-                    when (tab) {
-                        BottomTab.Products -> navController.navigate(AppConstants.products) {
-                            launchSingleTop = true
-                        }
-
-                        BottomTab.Beneficiaries -> navController.navigate(AppConstants.beneficiaries) {
-                            launchSingleTop = true
-                        }
-
-                        BottomTab.CreateBeneficiary -> navController.navigate(AppConstants.createBeneficiary) {
-                            launchSingleTop = true
-                        }
-
-                        BottomTab.Admin -> navController.navigate(AppConstants.adminHome) {
-                            launchSingleTop = true
-                        }
-                    }
-                }
-            )
         }
 
         // ---------- FAB ----------
@@ -274,10 +203,10 @@ fun ProductsViewContent(
             onClick = onAddClick,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 92.dp), // acima da bottom bar
+                .padding(end = 20.dp, bottom = 20.dp),
             shape = CircleShape,
-            containerColor = Color.White,
-            contentColor = Color.Black
+            containerColor = Color(0xFF2E7D32),
+            contentColor = Color.White
         ) {
             Icon(
                 imageVector = Icons.Default.Add,

@@ -1,7 +1,14 @@
 package com.example.lojasocial.ui.admin
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.lojasocial.core.auth.AuthStateHolder
+import com.example.lojasocial.models.User
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -9,6 +16,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
+import javax.inject.Inject
 
 // ---------- MODELS (mantém aqui, ou move para /models se preferires) ----------
 
@@ -27,6 +35,7 @@ data class News(
 }
 
 data class AdminStartState(
+    val user: User? = null,
     val news: List<News> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
@@ -34,13 +43,28 @@ data class AdminStartState(
 
 // ---------- VIEWMODEL ----------
 
-class AdminStartViewModel : ViewModel() {
+@HiltViewModel
+class AdminStartViewModel @Inject constructor(
+    private val authStateHolder: AuthStateHolder
+) : ViewModel() {
 
-    var uiState = mutableStateOf(AdminStartState())
-        private set
+    private val _uiState = MutableStateFlow(AdminStartState())
+    val uiState: StateFlow<AdminStartState> = _uiState.asStateFlow()
+
+    init {
+        observeAuthState()
+    }
+
+    private fun observeAuthState() {
+        viewModelScope.launch {
+            authStateHolder.currentUser.collect { user ->
+                _uiState.value = _uiState.value.copy(user = user)
+            }
+        }
+    }
 
     fun loadNews(limit: Int = 5) {
-        uiState.value = uiState.value.copy(isLoading = true, error = null)
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
         val client = OkHttpClient()
         val request = Request.Builder()
@@ -50,7 +74,7 @@ class AdminStartViewModel : ViewModel() {
         client.newCall(request).enqueue(object : Callback {
 
             override fun onFailure(call: Call, e: IOException) {
-                uiState.value = uiState.value.copy(
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Erro ao ligar à API"
                 )
@@ -59,7 +83,7 @@ class AdminStartViewModel : ViewModel() {
             override fun onResponse(call: Call, response: Response) {
                 response.use {
                     if (!response.isSuccessful) {
-                        uiState.value = uiState.value.copy(
+                        _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             error = "Erro inesperado: ${response.code}"
                         )
@@ -68,7 +92,7 @@ class AdminStartViewModel : ViewModel() {
 
                     val result = response.body?.string()
                     if (result.isNullOrBlank()) {
-                        uiState.value = uiState.value.copy(
+                        _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             error = "Resposta vazia da API"
                         )
@@ -78,7 +102,7 @@ class AdminStartViewModel : ViewModel() {
                     val jsonResult = try {
                         JSONObject(result)
                     } catch (e: Exception) {
-                        uiState.value = uiState.value.copy(
+                        _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             error = "JSON inválido"
                         )
@@ -88,7 +112,7 @@ class AdminStartViewModel : ViewModel() {
                     // ✅ getJSONArray correto
                     val postsJsonArray = jsonResult.optJSONArray("posts")
                     if (postsJsonArray == null) {
-                        uiState.value = uiState.value.copy(
+                        _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             error = "Campo 'posts' não encontrado"
                         )
@@ -101,7 +125,7 @@ class AdminStartViewModel : ViewModel() {
                         newsList.add(News.fromJson(postJson))
                     }
 
-                    uiState.value = uiState.value.copy(
+                    _uiState.value = _uiState.value.copy(
                         news = newsList,
                         isLoading = false,
                         error = null
@@ -109,5 +133,9 @@ class AdminStartViewModel : ViewModel() {
                 }
             }
         })
+    }
+
+    fun logout() {
+        authStateHolder.signOut()
     }
 }

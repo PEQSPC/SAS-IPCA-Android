@@ -33,7 +33,6 @@ import com.example.lojasocial.ui.theme.LojaSocialTheme
 @Composable
 fun LoginView(
     navController: NavController,
-    onLoginClick: (userType: String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val viewModel: LoginViewModel = hiltViewModel()
@@ -45,11 +44,7 @@ fun LoginView(
         setUsername = viewModel::setUsername,
         setPassword = viewModel::setPassword,
         onLogin = {
-            viewModel.login {
-                val userType = uiState.user?.userType ?: ""
-                Log.d("LoginView", "Login success - userType: '$userType' (user.name: '${uiState.user?.name}')")
-                onLoginClick(userType)
-            }
+            viewModel.login()
         },
         modifier = modifier
     )

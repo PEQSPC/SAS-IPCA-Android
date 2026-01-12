@@ -1,6 +1,7 @@
 package com.example.lojasocial.ui.beneficiary
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,7 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.lojasocial.R
@@ -26,8 +27,8 @@ fun BeneficiaryCreateView(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    val vm: BeneficiaryCreateViewModel = viewModel()
-    val uiState = vm.uiState.value
+    val vm: BeneficiaryCreateViewModel = hiltViewModel()
+    val uiState by vm.uiState.collectAsState()
 
     BeneficiaryCreateViewContent(
         modifier = modifier,
@@ -39,6 +40,7 @@ fun BeneficiaryCreateView(
         onEmailChange = vm::setEmail,
         onCursoChange = vm::setCurso,
         onAnoChange = vm::setAno,
+        onPhoneChange = vm::setPhone,
         onSaveClick = { vm.create { navController.popBackStack() } },
         onCancelClick = { navController.popBackStack() }
     )
@@ -55,31 +57,28 @@ fun BeneficiaryCreateViewContent(
     onEmailChange: (String) -> Unit = {},
     onCursoChange: (String) -> Unit = {},
     onAnoChange: (String) -> Unit = {},
+    onPhoneChange: (String) -> Unit = {},
     onSaveClick: () -> Unit = {},
     onCancelClick: () -> Unit = {}
 ) {
     val scroll = rememberScrollState()
 
-    Box(modifier = modifier.fillMaxSize()) {
-
-        Image(
-            painter = painterResource(R.drawable.img),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
-        )
-
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp)
-                .padding(top = 90.dp, bottom = 90.dp),
+                .padding(top = 60.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             Text(
                 text = "Criar Beneficiário",
-                color = Color.White,
+                color = Color.Black,
                 style = MaterialTheme.typography.titleLarge
             )
 

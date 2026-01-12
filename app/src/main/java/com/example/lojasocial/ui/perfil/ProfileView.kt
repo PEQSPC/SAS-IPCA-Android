@@ -7,6 +7,7 @@ import android.os.Environment
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -30,7 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
@@ -41,64 +42,13 @@ import com.example.lojasocial.ui.theme.LojaSocialTheme
 import java.io.File
 import java.util.Calendar
 
-// ---------------- BOTTOM NAV ----------------
-
-private enum class BottomTab {
-    Products, Beneficiaries, CreateBeneficiary, Profile, Admin
-}
-
-@Composable
-private fun AppBottomBar(
-    modifier: Modifier = Modifier,
-    selected: BottomTab,
-    onSelect: (BottomTab) -> Unit
-) {
-    NavigationBar(
-        modifier = modifier.height(80.dp),
-        containerColor = Color(0xFFDFF3E3),
-        tonalElevation = 6.dp,
-        windowInsets = WindowInsets(0)
-    ) {
-        BottomItem(BottomTab.Products, selected, Icons.Default.Inventory2, "Produtos", onSelect)
-        BottomItem(BottomTab.Beneficiaries, selected, Icons.Default.Group, "Benef.", onSelect)
-        BottomItem(BottomTab.CreateBeneficiary, selected, Icons.Default.PersonAdd, "Criar", onSelect)
-        BottomItem(BottomTab.Profile, selected, Icons.Default.Person, "Perfil", onSelect)
-        BottomItem(BottomTab.Admin, selected, Icons.Default.Home, "Admin", onSelect)
-    }
-}
-
-@Composable
-private fun RowScope.BottomItem(
-    tab: BottomTab,
-    selected: BottomTab,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onSelect: (BottomTab) -> Unit
-) {
-    NavigationBarItem(
-        selected = tab == selected,
-        onClick = { onSelect(tab) },
-        alwaysShowLabel = true,
-        icon = { Icon(icon, contentDescription = label) },
-        label = {
-            Text(
-                text = label,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    )
-}
-
-// ---------------- VIEW ----------------
-
 @Composable
 fun ProfileView(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    val viewModel: ProfileViewModel = viewModel()
-    val uiState by viewModel.uiState
+    val viewModel: ProfileViewModel = hiltViewModel()
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
     val cameraImageUri = remember { mutableStateOf<Uri?>(null) }
@@ -155,33 +105,24 @@ fun ProfileViewContent(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    // ✅ nesta screen fica selecionado Perfil
-    val selectedTab = BottomTab.Profile
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        // --------- CONTEÚDO (COM SCROLL) ---------
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(top = 40.dp, bottom = 16.dp)
+                .verticalScroll(scrollState)
+                .imePadding(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
 
-    Box(modifier = modifier.fillMaxSize()) {
-
-        Image(
-            painter = painterResource(R.drawable.img),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        Column(modifier = Modifier.fillMaxSize()) {
-
-            // --------- CONTEÚDO (COM SCROLL) ---------
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 40.dp, bottom = 16.dp)
-                    .verticalScroll(scrollState)
-                    .imePadding(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-                // ✅ QUADRADO/CAIXA BRANCA (como no criar beneficiários)
+                //  QUADRADO/CAIXA BRANCA (como no criar beneficiários)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -210,7 +151,7 @@ fun ProfileViewContent(
                         Box(
                             modifier = Modifier
                                 .size(120.dp)
-                                .clip(CircleShape) // ✅ garante círculo
+                                .clip(CircleShape) // garante círculo
                                 .clickable { showPhotoMenu.value = true }
                                 .border(2.dp, Color(0xFF2E7D32), CircleShape), // verde
                             contentAlignment = Alignment.Center
@@ -221,7 +162,7 @@ fun ProfileViewContent(
                                     contentDescription = "Foto de perfil",
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .clip(CircleShape), // ✅ corta a imagem em círculo
+                                        .clip(CircleShape), //  corta a imagem em círculo
                                     contentScale = ContentScale.Crop
                                 )
                             } else {
@@ -477,35 +418,8 @@ fun ProfileViewContent(
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
-
-            // -------- BOTTOM BAR --------
-            AppBottomBar(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
-                selected = selectedTab,
-                onSelect = { tab ->
-                    when (tab) {
-                        BottomTab.Products ->
-                            navController.navigate(AppConstants.products) { launchSingleTop = true }
-
-                        BottomTab.Beneficiaries ->
-                            navController.navigate(AppConstants.beneficiaries) { launchSingleTop = true }
-
-                        BottomTab.CreateBeneficiary ->
-                            navController.navigate(AppConstants.createBeneficiary) { launchSingleTop = true }
-
-                        BottomTab.Profile ->
-                            navController.navigate(AppConstants.profile) { launchSingleTop = true }
-
-                        BottomTab.Admin ->
-                            navController.navigate(AppConstants.adminHome) { launchSingleTop = true }
-                    }
-                }
-            )
         }
     }
-}
 
 @Preview(showBackground = true)
 @Composable

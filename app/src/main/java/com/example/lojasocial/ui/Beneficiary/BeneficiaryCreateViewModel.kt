@@ -1,10 +1,15 @@
 package com.example.lojasocial.ui.beneficiary
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.lojasocial.models.Beneficiary
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class BeneficiaryCreateState(
     var numeroAluno: String? = null,
@@ -14,71 +19,65 @@ data class BeneficiaryCreateState(
     var email: String? = null,
     var curso: String? = null,
     var ano: String? = null,
+    var phone: String? = null,  // Novo campo
     var error: String? = null,
     var isLoading: Boolean = false
 )
 
-class BeneficiaryCreateViewModel : ViewModel() {
+@HiltViewModel
+class BeneficiaryCreateViewModel @Inject constructor(
+    private val db: FirebaseFirestore
+) : ViewModel() {
 
-    var uiState = mutableStateOf(BeneficiaryCreateState())
-        private set
+    private val _uiState = MutableStateFlow(BeneficiaryCreateState())
+    val uiState: StateFlow<BeneficiaryCreateState> = _uiState.asStateFlow()
 
-    private val db = Firebase.firestore
-
-    fun setNumeroAluno(v: String) { uiState.value = uiState.value.copy(numeroAluno = v) }
-    fun setNome(v: String) { uiState.value = uiState.value.copy(nome = v) }
-    fun setNif(v: String) { uiState.value = uiState.value.copy(nif = v) }
-    fun setDataNascimento(v: String) { uiState.value = uiState.value.copy(dataNascimento = v) }
-    fun setEmail(v: String) { uiState.value = uiState.value.copy(email = v) }
-    fun setCurso(v: String) { uiState.value = uiState.value.copy(curso = v) }
-    fun setAno(v: String) { uiState.value = uiState.value.copy(ano = v) }
+    fun setNumeroAluno(v: String) { _uiState.value = _uiState.value.copy(numeroAluno = v) }
+    fun setNome(v: String) { _uiState.value = _uiState.value.copy(nome = v) }
+    fun setNif(v: String) { _uiState.value = _uiState.value.copy(nif = v) }
+    fun setDataNascimento(v: String) { _uiState.value = _uiState.value.copy(dataNascimento = v) }
+    fun setEmail(v: String) { _uiState.value = _uiState.value.copy(email = v) }
+    fun setCurso(v: String) { _uiState.value = _uiState.value.copy(curso = v) }
+    fun setAno(v: String) { _uiState.value = _uiState.value.copy(ano = v) }
+    fun setPhone(v: String) { _uiState.value = _uiState.value.copy(phone = v) }
 
     private fun validate(): Boolean {
-        if (uiState.value.nome.isNullOrBlank()) {
-            uiState.value = uiState.value.copy(error = "Nome é obrigatório", isLoading = false)
+        if (_uiState.value.nome.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(error = "Nome é obrigatório", isLoading = false)
             return false
         }
-        if (uiState.value.nif.isNullOrBlank()) {
-            uiState.value = uiState.value.copy(error = "NIF é obrigatório", isLoading = false)
+        if (_uiState.value.email.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(error = "Email é obrigatório", isLoading = false)
             return false
         }
-        if (uiState.value.nif!!.length != 9 || uiState.value.nif!!.any { !it.isDigit() }) {
-            uiState.value = uiState.value.copy(error = "NIF deve ter 9 dígitos", isLoading = false)
-            return false
-        }
-        if (uiState.value.email.isNullOrBlank()) {
-            uiState.value = uiState.value.copy(error = "Email é obrigatório", isLoading = false)
-            return false
-        }
-        if (!uiState.value.email!!.contains("@")) {
-            uiState.value = uiState.value.copy(error = "Email inválido", isLoading = false)
+        if (!_uiState.value.email!!.contains("@")) {
+            _uiState.value = _uiState.value.copy(error = "Email inválido", isLoading = false)
             return false
         }
         return true
     }
 
     fun create(onSuccess: () -> Unit) {
-        uiState.value = uiState.value.copy(isLoading = true, error = null)
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         if (!validate()) return
 
         val data = Beneficiary(
-            numeroAluno = uiState.value.numeroAluno,
-            nome = uiState.value.nome,
-            nif = uiState.value.nif,
-            dataNascimento = uiState.value.dataNascimento,
-            email = uiState.value.email,
-            curso = uiState.value.curso,
-            ano = uiState.value.ano
+            numeroAluno = _uiState.value.numeroAluno,
+            nome = _uiState.value.nome,
+            email = _uiState.value.email,
+            phone = _uiState.value.phone,
+            curso = _uiState.value.curso,
+            ano = _uiState.value.ano
         )
 
         db.collection("beneficiaries")
             .add(data)
             .addOnSuccessListener {
-                uiState.value = uiState.value.copy(isLoading = false, error = null)
+                _uiState.value = _uiState.value.copy(isLoading = false, error = null)
                 onSuccess()
             }
             .addOnFailureListener { e ->
-                uiState.value = uiState.value.copy(isLoading = false, error = e.message)
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
             }
     }
 }
