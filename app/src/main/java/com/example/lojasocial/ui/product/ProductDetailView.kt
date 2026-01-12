@@ -27,7 +27,8 @@ import com.example.lojasocial.ui.theme.LojaSocialTheme
 fun ProductDetailView(
     navController: NavController,
     modifier: Modifier = Modifier,
-    docId: String? = null
+    docId: String? = null,
+    isReadOnly: Boolean = false
 ) {
     val vm: ProductDetailViewModel = viewModel()
     val uiState = vm.uiState.value
@@ -50,6 +51,7 @@ fun ProductDetailView(
         modifier = modifier,
         uiState = uiState,
         isEditMode = isEditMode,
+        isReadOnly = isReadOnly,
         onSkuChange = vm::setSku,
         onNameChange = vm::setName,
         onFamiliaChange = vm::setFamilia,
@@ -71,6 +73,7 @@ fun ProductDetailViewContent(
     modifier: Modifier = Modifier,
     uiState: ProductDetailState,
     isEditMode: Boolean,
+    isReadOnly: Boolean = false,
     onSkuChange: (String) -> Unit = {},
     onNameChange: (String) -> Unit = {},
     onFamiliaChange: (String) -> Unit = {},
@@ -106,7 +109,11 @@ fun ProductDetailViewContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = if (isEditMode) "Editar Artigo" else "Criar Artigo",
+                text = when {
+                    isReadOnly -> "Detalhes do Artigo"
+                    isEditMode -> "Editar Artigo"
+                    else -> "Criar Artigo"
+                },
                 color = Color.White,
                 style = MaterialTheme.typography.titleLarge
             )
@@ -144,13 +151,13 @@ fun ProductDetailViewContent(
                         Spacer(Modifier.height(10.dp))
                     }
 
-                    Field("SKU *", uiState.sku, onSkuChange)
-                    Field("Nome *", uiState.name, onNameChange)
-                    Field("Família *", uiState.familia, onFamiliaChange)
-                    Field("Unidade *", uiState.unidade, onUnidadeChange)
-                    Field("Localização", uiState.localizacao, onLocalizacaoChange)
-                    Field("Stock mínimo", uiState.stockMinimo, onStockMinimoChange)
-                    Field("Stock atual", uiState.stockAtual, onStockAtualChange)
+                    Field("SKU *", uiState.sku, onSkuChange, readOnly = isReadOnly)
+                    Field("Nome *", uiState.name, onNameChange, readOnly = isReadOnly)
+                    Field("Família *", uiState.familia, onFamiliaChange, readOnly = isReadOnly)
+                    Field("Unidade *", uiState.unidade, onUnidadeChange, readOnly = isReadOnly)
+                    Field("Localização", uiState.localizacao, onLocalizacaoChange, readOnly = isReadOnly)
+                    Field("Stock mínimo", uiState.stockMinimo, onStockMinimoChange, readOnly = isReadOnly)
+                    Field("Stock atual", uiState.stockAtual, onStockAtualChange, readOnly = isReadOnly)
 
                     Text("EANs (separados por vírgulas)", color = Color.Black)
                     Spacer(Modifier.height(6.dp))
@@ -160,22 +167,26 @@ fun ProductDetailViewContent(
                         onValueChange = onEansChange,
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2,
-                        colors = fieldColors()
+                        colors = fieldColors(),
+                        readOnly = isReadOnly
                     )
 
                     Spacer(Modifier.height(8.dp))
 
-                    Button(
-                        onClick = { showScanner = true },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF0B1220),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Icon(Icons.Default.QrCodeScanner, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Ler EAN/QR pela câmara")
+                    // Botão scanner só para admin
+                    if (!isReadOnly) {
+                        Button(
+                            onClick = { showScanner = true },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF0B1220),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Ler EAN/QR pela câmara")
+                        }
                     }
 
                     Spacer(Modifier.height(12.dp))
@@ -188,60 +199,79 @@ fun ProductDetailViewContent(
                             .fillMaxWidth()
                             .heightIn(min = 110.dp),
                         minLines = 4,
-                        colors = fieldColors()
+                        colors = fieldColors(),
+                        readOnly = isReadOnly
                     )
 
                     Spacer(Modifier.height(14.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = onSave,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF0B1220),
-                                contentColor = Color.White
-                            ),
-                            enabled = !uiState.isLoading
+                    // Botões de ação só para admin
+                    if (!isReadOnly) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text(if (isEditMode) "Guardar" else "Criar")
+                            Button(
+                                onClick = onSave,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF0B1220),
+                                    contentColor = Color.White
+                                ),
+                                enabled = !uiState.isLoading
+                            ) {
+                                Text(if (isEditMode) "Guardar" else "Criar")
+                            }
+
+                            Button(
+                                onClick = onCancel,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFEDEDED),
+                                    contentColor = Color.Black
+                                )
+                            ) {
+                                Text("Cancelar")
+                            }
                         }
 
+                        if (isEditMode) {
+                            Spacer(Modifier.height(10.dp))
+                            Button(
+                                onClick = onDelete,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFFE6E6),
+                                    contentColor = Color.Black
+                                ),
+                                enabled = !uiState.isLoading
+                            ) {
+                                Text("Eliminar")
+                            }
+                        }
+                    } else {
+                        // User: apenas botão voltar
                         Button(
                             onClick = onCancel,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFEDEDED),
-                                contentColor = Color.Black
-                            )
-                        ) {
-                            Text("Cancelar")
-                        }
-                    }
-
-                    if (isEditMode) {
-                        Spacer(Modifier.height(10.dp))
-                        Button(
-                            onClick = onDelete,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(46.dp),
                             shape = RoundedCornerShape(20.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFFE6E6),
-                                contentColor = Color.Black
-                            ),
-                            enabled = !uiState.isLoading
+                                containerColor = Color(0xFF2E7D32),
+                                contentColor = Color.White
+                            )
                         ) {
-                            Text("Eliminar")
+                            Text("Voltar")
                         }
                     }
 
@@ -290,7 +320,7 @@ fun ProductDetailViewContent(
 }
 
 @Composable
-private fun Field(label: String, value: String, onValueChange: (String) -> Unit) {
+private fun Field(label: String, value: String, onValueChange: (String) -> Unit, readOnly: Boolean = false) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -299,7 +329,8 @@ private fun Field(label: String, value: String, onValueChange: (String) -> Unit)
             .fillMaxWidth()
             .padding(bottom = 10.dp),
         singleLine = true,
-        colors = fieldColors()
+        colors = fieldColors(),
+        readOnly = readOnly
     )
 }
 

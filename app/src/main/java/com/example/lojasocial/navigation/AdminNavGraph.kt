@@ -49,7 +49,11 @@ fun NavGraphBuilder.adminNavGraph(navController: NavHostController, authStateHol
         // PRODUCTS (with bottom bar)
         composable(AppConstants.products) {
             AdminScaffold(navController = navController, showBottomBar = true) { paddingValues ->
-                ProductsView(navController = navController, modifier = androidx.compose.ui.Modifier.padding(paddingValues))
+                ProductsView(
+                    navController = navController,
+                    isAdmin = true,
+                    modifier = androidx.compose.ui.Modifier.padding(paddingValues)
+                )
             }
         }
 

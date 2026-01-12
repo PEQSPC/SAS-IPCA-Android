@@ -92,7 +92,8 @@ class ProductsViewModel @Inject constructor(
 @Composable
 fun ProductsView(
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isAdmin: Boolean = false
 ) {
     val vm: ProductsViewModel = hiltViewModel()
     val uiState by vm.uiState.collectAsState()
@@ -103,6 +104,7 @@ fun ProductsView(
         navController = navController,
         modifier = modifier,
         uiState = uiState,
+        isAdmin = isAdmin,
         onAddClick = {
             navController.navigate(AppConstants.productsDetailCreate) {
                 launchSingleTop = true
@@ -126,6 +128,7 @@ fun ProductsViewContent(
     navController: NavController,
     modifier: Modifier = Modifier,
     uiState: ProductsListState,
+    isAdmin: Boolean = false,
     onAddClick: () -> Unit = {},
     onProductClick: (Products) -> Unit = {}
 ) {
@@ -198,20 +201,22 @@ fun ProductsViewContent(
             }
         }
 
-        // ---------- FAB ----------
-        FloatingActionButton(
-            onClick = onAddClick,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 20.dp),
-            shape = CircleShape,
-            containerColor = Color(0xFF2E7D32),
-            contentColor = Color.White
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Adicionar produto"
-            )
+        // ---------- FAB (só para admin) ----------
+        if (isAdmin) {
+            FloatingActionButton(
+                onClick = onAddClick,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 20.dp),
+                shape = CircleShape,
+                containerColor = Color(0xFF2E7D32),
+                contentColor = Color.White
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Adicionar produto"
+                )
+            }
         }
     }
 }

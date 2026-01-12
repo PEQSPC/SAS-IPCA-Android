@@ -40,7 +40,7 @@ fun MoreMenuView(
     val quickAccessItems = listOf(
         QuickAccessItem(Icons.Default.Handshake, "Doadores", AppConstants.donors),
         QuickAccessItem(Icons.Default.CalendarMonth, "Agendamentos", AppConstants.agendas),
-        QuickAccessItem(Icons.Default.LocalShipping, "Entregas", AppConstants.deliveries),
+        //QuickAccessItem(Icons.Default.LocalShipping, "Entregas", AppConstants.deliveries),
         QuickAccessItem(Icons.Default.Category, "Categorias", AppConstants.families),
         QuickAccessItem(Icons.Default.Person, "Perfil", AppConstants.profile)
     )
