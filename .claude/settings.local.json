@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(./gradlew.bat assembleDebug)",
+      "Bash(./gradlew.bat compileDebugKotlin:*)",
+      "Bash(java -version:*)"
     ]
   }
 }

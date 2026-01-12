@@ -1,9 +1,13 @@
 package com.example.lojasocial
 
 import com.example.lojasocial.core.auth.AuthStateHolder
+import com.example.lojasocial.data.repository.AgendaRepository
+import com.example.lojasocial.data.repository.BeneficiaryRepository
 import com.example.lojasocial.data.repository.DeliveryRepository
 import com.example.lojasocial.data.repository.DonationRepository
 import com.example.lojasocial.data.repository.DonorRepository
+import com.example.lojasocial.data.repository.FamilyRepository
+import com.example.lojasocial.data.repository.ItemRepository
 import com.example.lojasocial.data.repository.StockLotRepository
 import com.example.lojasocial.data.repository.StockMoveRepository
 import com.example.lojasocial.models.AuthRepository
@@ -81,5 +85,29 @@ object AppModule {
     @Singleton
     fun providesStockMoveRepository(db: FirebaseFirestore): StockMoveRepository {
         return StockMoveRepository(db)
+    }
+
+    @Provides
+    @Singleton
+    fun providesBeneficiaryRepository(db: FirebaseFirestore): BeneficiaryRepository {
+        return BeneficiaryRepository(db)
+    }
+
+    @Provides
+    @Singleton
+    fun providesFamilyRepository(db: FirebaseFirestore): FamilyRepository {
+        return FamilyRepository(db)
+    }
+
+    @Provides
+    @Singleton
+    fun providesAgendaRepository(db: FirebaseFirestore): AgendaRepository {
+        return AgendaRepository(db)
+    }
+
+    @Provides
+    @Singleton
+    fun providesItemRepository(db: FirebaseFirestore): ItemRepository {
+        return ItemRepository(db)
     }
 }

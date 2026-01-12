@@ -28,8 +28,13 @@ import com.example.lojasocial.ui.admin.donations.DonationsListView
 import com.example.lojasocial.ui.admin.donations.DonationCreateView
 import com.example.lojasocial.ui.admin.deliveries.DeliveriesListView
 import com.example.lojasocial.ui.admin.deliveries.DeliveryCreateView
+import com.example.lojasocial.ui.admin.more.MoreMenuView
+import com.example.lojasocial.ui.admin.stock.StockOverviewView
+import com.example.lojasocial.ui.admin.stock.StockLotsView
+import com.example.lojasocial.ui.admin.stock.StockMovesView
+import com.example.lojasocial.core.auth.AuthStateHolder
 
-fun NavGraphBuilder.adminNavGraph(navController: NavHostController) {
+fun NavGraphBuilder.adminNavGraph(navController: NavHostController, authStateHolder: AuthStateHolder) {
     navigation(
         startDestination = AppConstants.adminHome,
         route = "adminGraph"
@@ -189,10 +194,46 @@ fun NavGraphBuilder.adminNavGraph(navController: NavHostController) {
             }
         }
 
-        // PROFILE (with bottom bar)
-        composable(AppConstants.profile) {
+        // MORE MENU (with bottom bar)
+        composable(AppConstants.more) {
             AdminScaffold(navController = navController, showBottomBar = true) { paddingValues ->
+                MoreMenuView(
+                    navController = navController,
+                    authStateHolder = authStateHolder,
+                    modifier = androidx.compose.ui.Modifier.padding(paddingValues)
+                )
+            }
+        }
+
+        // PROFILE (no bottom bar - accessed from More menu)
+        composable(AppConstants.profile) {
+            AdminScaffold(navController = navController, showBottomBar = false) { paddingValues ->
                 ProfileView(navController = navController, modifier = androidx.compose.ui.Modifier.padding(paddingValues))
+            }
+        }
+
+        // STOCK OVERVIEW (no bottom bar - accessed from More menu)
+        composable(AppConstants.stock) {
+            AdminScaffold(navController = navController, showBottomBar = false) { paddingValues ->
+                StockOverviewView(navController = navController, modifier = androidx.compose.ui.Modifier.padding(paddingValues))
+            }
+        }
+
+        // STOCK LOTS DETAIL (no bottom bar - modal behavior)
+        composable(
+            route = AppConstants.stockLots,
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: return@composable
+            AdminScaffold(navController = navController, showBottomBar = false) { paddingValues ->
+                StockLotsView(navController = navController, modifier = androidx.compose.ui.Modifier.padding(paddingValues))
+            }
+        }
+
+        // STOCK MOVES HISTORY (no bottom bar - modal behavior)
+        composable(AppConstants.stockMoves) {
+            AdminScaffold(navController = navController, showBottomBar = false) { paddingValues ->
+                StockMovesView(navController = navController, modifier = androidx.compose.ui.Modifier.padding(paddingValues))
             }
         }
     }

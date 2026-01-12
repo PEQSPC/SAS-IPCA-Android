@@ -54,7 +54,7 @@ fun RootNavGraph(
         startDestination = "authGraph"
     ) {
         authNavGraph(navController)
-        adminNavGraph(navController)
+        adminNavGraph(navController, authStateHolder)
         userNavGraph(navController)
     }
 }

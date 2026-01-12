@@ -3,40 +3,36 @@ package com.example.lojasocial.ui.admin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lojasocial.core.auth.AuthStateHolder
+import com.example.lojasocial.data.repository.BeneficiaryRepository
+import com.example.lojasocial.data.repository.DeliveryRepository
+import com.example.lojasocial.data.repository.DonationRepository
+import com.example.lojasocial.data.repository.ItemRepository
+import com.example.lojasocial.data.repository.StockLotRepository
+import com.example.lojasocial.models.ResultWrapper
 import com.example.lojasocial.models.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import org.json.JSONObject
-import java.io.IOException
 import javax.inject.Inject
 
-// ---------- MODELS (mantém aqui, ou move para /models se preferires) ----------
+// ---------- MODELS ----------
 
-data class News(
-    val title: String,
-    val body: String
+data class DashboardStats(
+    val totalItems: Int = 0,
+    val itemsInAlert: Int = 0, // items with stock < minStock
+    val itemsExpiringSoon: Int = 0, // items expiring in < 30 days
+    val totalDonations: Int = 0,
+    val totalBeneficiaries: Int = 0,
+    val totalDeliveries: Int = 0
 ) {
-    companion object {
-        fun fromJson(json: JSONObject): News {
-            return News(
-                title = json.optString("title", ""),
-                body = json.optString("body", "")
-            )
-        }
-    }
+    fun hasAlerts(): Boolean = itemsInAlert > 0 || itemsExpiringSoon > 0
 }
 
 data class AdminStartState(
     val user: User? = null,
-    val news: List<News> = emptyList(),
+    val dashboardStats: DashboardStats? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -45,7 +41,12 @@ data class AdminStartState(
 
 @HiltViewModel
 class AdminStartViewModel @Inject constructor(
-    private val authStateHolder: AuthStateHolder
+    private val authStateHolder: AuthStateHolder,
+    private val itemRepository: ItemRepository,
+    private val stockLotRepository: StockLotRepository,
+    private val donationRepository: DonationRepository,
+    private val beneficiaryRepository: BeneficiaryRepository,
+    private val deliveryRepository: DeliveryRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminStartState())
@@ -63,76 +64,101 @@ class AdminStartViewModel @Inject constructor(
         }
     }
 
-    fun loadNews(limit: Int = 5) {
-        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+    fun loadDashboardStats() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-        val client = OkHttpClient()
-        val request = Request.Builder()
-            .url("https://dummyjson.com/posts?limit=$limit")
-            .build()
+            try {
+                var totalItems = 0
+                var itemsInAlert = 0
+                var itemsExpiringSoon = 0
 
-        client.newCall(request).enqueue(object : Callback {
+                // Load items and check alerts
+                itemRepository.getItems().collect { result ->
+                    when (result) {
+                        is ResultWrapper.Success -> {
+                            val items = result.data ?: emptyList()
+                            totalItems = items.size
 
-            override fun onFailure(call: Call, e: IOException) {
+                            // Count items with low stock
+                            itemsInAlert = items.count { item ->
+                                val current = item.stockCurrent ?: 0
+                                val min = item.minStock ?: 0
+                                current < min
+                            }
+
+                            // Check expiring items (items with lots expiring in < 30 days)
+                            items.forEach { item ->
+                                stockLotRepository.getStockLots(item.docId ?: "").collect { lotsResult ->
+                                    if (lotsResult is ResultWrapper.Success) {
+                                        val lots = lotsResult.data ?: emptyList()
+                                        val hasExpiringLot = lots.any { lot ->
+                                            lot.expiryDate?.let { expiryTimestamp ->
+                                                try {
+                                                    val expiryMillis = expiryTimestamp.toDate().time
+                                                    val now = System.currentTimeMillis()
+                                                    val daysUntilExpiry = ((expiryMillis - now) / (1000 * 60 * 60 * 24)).toInt()
+
+                                                    daysUntilExpiry in 0..30
+                                                } catch (e: Exception) {
+                                                    false
+                                                }
+                                            } ?: false
+                                        }
+                                        if (hasExpiringLot) {
+                                            itemsExpiringSoon++
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+
+                // Load donations count
+                var totalDonations = 0
+                donationRepository.getDonations().collect { result ->
+                    if (result is ResultWrapper.Success) {
+                        totalDonations = result.data?.size ?: 0
+                    }
+                }
+
+                // Load beneficiaries count
+                var totalBeneficiaries = 0
+                beneficiaryRepository.getBeneficiaries().collect { result ->
+                    if (result is ResultWrapper.Success) {
+                        totalBeneficiaries = result.data?.size ?: 0
+                    }
+                }
+
+                // Load deliveries count
+                var totalDeliveries = 0
+                deliveryRepository.getDeliveries().collect { result ->
+                    if (result is ResultWrapper.Success) {
+                        totalDeliveries = result.data?.size ?: 0
+                    }
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    dashboardStats = DashboardStats(
+                        totalItems = totalItems,
+                        itemsInAlert = itemsInAlert,
+                        itemsExpiringSoon = itemsExpiringSoon,
+                        totalDonations = totalDonations,
+                        totalBeneficiaries = totalBeneficiaries,
+                        totalDeliveries = totalDeliveries
+                    ),
+                    isLoading = false
+                )
+
+            } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = e.message ?: "Erro ao ligar à API"
+                    error = e.message ?: "Erro ao carregar estatísticas"
                 )
             }
-
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    if (!response.isSuccessful) {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "Erro inesperado: ${response.code}"
-                        )
-                        return
-                    }
-
-                    val result = response.body?.string()
-                    if (result.isNullOrBlank()) {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "Resposta vazia da API"
-                        )
-                        return
-                    }
-
-                    val jsonResult = try {
-                        JSONObject(result)
-                    } catch (e: Exception) {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "JSON inválido"
-                        )
-                        return
-                    }
-
-                    // ✅ getJSONArray correto
-                    val postsJsonArray = jsonResult.optJSONArray("posts")
-                    if (postsJsonArray == null) {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "Campo 'posts' não encontrado"
-                        )
-                        return
-                    }
-
-                    val newsList = mutableListOf<News>()
-                    for (i in 0 until postsJsonArray.length()) {
-                        val postJson = postsJsonArray.optJSONObject(i) ?: continue
-                        newsList.add(News.fromJson(postJson))
-                    }
-
-                    _uiState.value = _uiState.value.copy(
-                        news = newsList,
-                        isLoading = false,
-                        error = null
-                    )
-                }
-            }
-        })
+        }
     }
 
     fun logout() {

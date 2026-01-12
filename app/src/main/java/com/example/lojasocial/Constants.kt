@@ -42,5 +42,8 @@ object AppConstants {
     const val stockLots = "stock/lots/{itemId}"
     const val stockMoves = "stock/moves"
 
+    const val more = "more"
+    const val reports = "reports"
+
     const val carts = "carts"
 }

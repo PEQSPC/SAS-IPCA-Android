@@ -19,12 +19,12 @@ enum class AdminTab(
     val icon: ImageVector,
     val label: String
 ) {
-    PRODUCTS(AppConstants.products, Icons.Default.Inventory2, "Produtos"),
+    HOME(AppConstants.adminHome, Icons.Default.Home, "Início"),
     BENEFICIARIES(AppConstants.beneficiaries, Icons.Default.Group, "Benef."),
-    DONORS(AppConstants.donors, Icons.Default.Handshake, "Doadores"),
-    FAMILIES(AppConstants.families, Icons.Default.Category, "Famílias"),
-    AGENDAS(AppConstants.agendas, Icons.Default.CalendarMonth, "Agendas"),
-    PROFILE(AppConstants.profile, Icons.Default.Person, "Perfil")
+    DONATIONS(AppConstants.donations, Icons.Default.CardGiftcard, "Doações"),
+    PRODUCTS(AppConstants.products, Icons.Default.Inventory2, "Artigos"),
+    DELIVERIES(AppConstants.deliveries, Icons.Default.LocalShipping, "Entregas"),
+    MORE(AppConstants.more, Icons.Default.MoreHoriz, "Mais")
 }
 
 @Composable
