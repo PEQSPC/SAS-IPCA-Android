@@ -25,11 +25,11 @@ Sistema Android completo para gestão de lojas sociais, desenvolvido em Kotlin c
 
 ## 📖 Sobre o Projeto
 
-A **LojaSocial** é uma aplicação móvel Android desenvolvida para facilitar a gestão de lojas sociais - estabelecimentos que distribuem produtos alimentares e de primeira necessidade a pessoas em situação de vulnerabilidade social.
+A **LojaSocial** é uma aplicação móvel Android desenvolvida para facilitar a gestão do SAS do ipca - estabelecimento que distribue produtos alimentares e de primeira necessidade a estudantes em situação de vulnerabilidade social.
 
 ### O que é uma Loja Social?
 
-Uma loja social é um espaço onde beneficiários (estudantes, famílias carenciadas) podem receber produtos gratuitamente ou a preços simbólicos, provenientes de doações de empresas e particulares.
+Uma loja social é um espaço onde beneficiários (estudantes, famílias carenciadas) podem receber produtos gratuitamente, provenientes de doações de empresas e particulares.
 
 ### Propósito
 
@@ -41,10 +41,8 @@ Digitalizar e otimizar todo o processo de gestão, desde o registo de doações 
 
 ### Público-Alvo
 
-- 🏫 Instituições de ensino (gabinetes de ação social)
-- 🏢 Bancos alimentares
-- 🤝 Organizações sociais
-- 🏛️ Autarquias com programas sociais
+- 🏫 SAS IPCA (gabinete de ação social)
+
 
 ---
 
@@ -58,7 +56,7 @@ Digitalizar e otimizar todo o processo de gestão, desde o registo de doações 
 - Perfis de utilizador personalizados
 
 ### 📦 Gestão de Artigos/Produtos
-- Cadastro completo de produtos
+- Registo completo de produtos
 - **Scanner de código de barras** integrado (EAN/UPC)
 - Controlo de **stock mínimo** e **stock atual**
 - Localização física (prateleira)
@@ -102,7 +100,7 @@ Sistema completo com rastreabilidade total:
 - Por tipo de movimento (entrada/saída)
 
 ### 👥 Gestão de Beneficiários
-- Cadastro completo (nome, nº aluno, NIF, contactos, curso, ano)
+- Registo completo (nome, nº aluno, NIF, contactos, curso, ano)
 - **Estados de beneficiário**:
   - 🟢 **Ativo** (ACTIVE)
   - 🟠 **Pendente** (PENDING)
@@ -130,7 +128,7 @@ Sistema inteligente com consumo automático FIFO:
 - Filtros por estado e beneficiário
 
 ### 🏢 Gestão de Doadores
-- Cadastro de doadores (empresas e particulares)
+- Registo de doadores (empresas e particulares)
 - **Tipos**: COMPANY ou PRIVATE
 - Informação: nome, email, NIF
 - Histórico de doações por doador
@@ -663,6 +661,6 @@ Para questões, problemas ou sugestões:
 
 ---
 
-Desenvolvido com ❤️ por estudantes do 3º ano
+Desenvolvido com ❤️ pelo estudantes Antonio Ferreira(9657), Gonçalo Gomes(23039), Ruben Dias(23033), Mafalda Barrao(20446), Joao Marcelo(23041)
 
 </div>
