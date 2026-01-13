@@ -1,5 +1,6 @@
 package com.example.lojasocial.models
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.IgnoreExtraProperties
 
 @IgnoreExtraProperties
@@ -12,5 +13,9 @@ data class Beneficiary(
     var email: String? = null,
     var phone: String? = null,           // NOVO campo
     var curso: String? = null,           // course
-    var ano: String? = null              // curricularYear
+    var ano: String? = null,             // curricularYear
+    var status: String? = "ACTIVE",      // "ACTIVE", "PENDING", "INACTIVE"
+    var lastDeliveryDate: Timestamp? = null,
+    var createdAt: Timestamp? = null,
+    var updatedAt: Timestamp? = null
 )

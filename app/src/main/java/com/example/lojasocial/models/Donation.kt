@@ -9,5 +9,9 @@ data class Donation(
     var donorId: String? = null,
     var donorName: String? = null,
     var date: Timestamp? = null,
-    var notes: String? = null
+    var notes: String? = null,
+    var status: String? = "PENDING",  // "PENDING", "RECEIVED", "PROCESSED"
+    var donationId: String? = null,   // Sequential ID like "DOA-001"
+    var createdAt: Timestamp? = null,
+    var updatedAt: Timestamp? = null
 )

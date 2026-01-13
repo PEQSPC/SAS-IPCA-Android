@@ -26,6 +26,10 @@ class BeneficiariesListViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(search = text)
     }
 
+    fun setStatusFilter(status: String?) {
+        _uiState.value = _uiState.value.copy(statusFilter = status)
+    }
+
     fun fetch() {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 

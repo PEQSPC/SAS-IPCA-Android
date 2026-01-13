@@ -25,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.lojasocial.AppConstants
 import com.example.lojasocial.models.Donation
+import com.example.lojasocial.ui.admin.components.DonationStatusBadge
 import com.example.lojasocial.ui.theme.LojaSocialTheme
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
@@ -45,6 +46,7 @@ fun DonationsListView(
         modifier = modifier,
         uiState = uiState,
         onSearchChange = vm::setSearch,
+        onStatusFilterChange = vm::setStatusFilter,
         onCreateClick = {
             navController.navigate(AppConstants.createDonation) { launchSingleTop = true }
         },
@@ -65,16 +67,23 @@ fun DonationsListViewContent(
     modifier: Modifier = Modifier,
     uiState: DonationsListState,
     onSearchChange: (String) -> Unit = {},
+    onStatusFilterChange: (String?) -> Unit = {},
     onCreateClick: () -> Unit = {},
     onOpenClick: (Donation) -> Unit = {}
 ) {
-    val filtered = remember(uiState.items, uiState.search) {
+    val filtered = remember(uiState.items, uiState.search, uiState.statusFilter) {
         val q = uiState.search.trim().lowercase()
 
         uiState.items.filter { donation ->
-            q.isBlank() ||
+            val matchesSearch = q.isBlank() ||
                 (donation.donorName ?: "").lowercase().contains(q) ||
-                (donation.notes ?: "").lowercase().contains(q)
+                (donation.notes ?: "").lowercase().contains(q) ||
+                (donation.donationId ?: "").lowercase().contains(q)
+
+            val matchesStatus = uiState.statusFilter == null ||
+                donation.status?.uppercase() == uiState.statusFilter?.uppercase()
+
+            matchesSearch && matchesStatus
         }
     }
 
@@ -132,6 +141,14 @@ fun DonationsListViewContent(
                     Text("Nova")
                 }
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // STATUS FILTER
+            StatusFilterRow(
+                currentFilter = uiState.statusFilter,
+                onFilterChange = onStatusFilterChange
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -219,38 +236,97 @@ private fun DonationRow(
         Spacer(modifier = Modifier.width(10.dp))
 
         Column(Modifier.weight(1f)) {
-            Text(
-                text = item.donorName?.ifBlank { "—" } ?: "—",
-                color = Color.Black,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
+                    text = item.donationId ?: item.docId?.take(6)?.uppercase() ?: "—",
+                    color = Color.Black,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1
+                )
+                DonationStatusBadge(status = item.status)
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = item.donorName?.ifBlank { "—" } ?: "—",
+                    color = Color.Black.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "•",
+                    color = Color.Black.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
                     text = dateText,
                     color = Color.Black.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.bodySmall
                 )
-                if (!item.notes.isNullOrBlank()) {
-                    Text(
-                        text = "•",
-                        color = Color.Black.copy(alpha = 0.6f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = item.notes!!,
-                        color = Color.Black.copy(alpha = 0.6f),
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+            }
+
+            if (!item.notes.isNullOrBlank()) {
+                Text(
+                    text = item.notes!!,
+                    color = Color.Black.copy(alpha = 0.5f),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun StatusFilterRow(
+    currentFilter: String?,
+    onFilterChange: (String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FilterChip(
+            selected = currentFilter == null,
+            onClick = { onFilterChange(null) },
+            label = { Text("Todos") }
+        )
+        FilterChip(
+            selected = currentFilter == "PENDING",
+            onClick = { onFilterChange("PENDING") },
+            label = { Text("Triagem") },
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = Color(0xFFFFA726).copy(alpha = 0.2f),
+                selectedLabelColor = Color(0xFFF57C00)
+            )
+        )
+        FilterChip(
+            selected = currentFilter == "RECEIVED",
+            onClick = { onFilterChange("RECEIVED") },
+            label = { Text("Recebida") },
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = Color(0xFF66BB6A).copy(alpha = 0.2f),
+                selectedLabelColor = Color(0xFF2E7D32)
+            )
+        )
+        FilterChip(
+            selected = currentFilter == "PROCESSED",
+            onClick = { onFilterChange("PROCESSED") },
+            label = { Text("Processada") },
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = Color(0xFF42A5F5).copy(alpha = 0.2f),
+                selectedLabelColor = Color(0xFF1976D2)
+            )
+        )
     }
 }
 
@@ -266,13 +342,25 @@ fun DonationsListViewPreview() {
                         docId = "1",
                         donorName = "Empresa ABC",
                         date = Timestamp.now(),
-                        notes = "Alimentos variados"
+                        notes = "Alimentos variados",
+                        status = "PENDING",
+                        donationId = "DOA-001"
                     ),
                     Donation(
                         docId = "2",
                         donorName = "João Silva",
                         date = Timestamp.now(),
-                        notes = null
+                        notes = null,
+                        status = "RECEIVED",
+                        donationId = "DOA-002"
+                    ),
+                    Donation(
+                        docId = "3",
+                        donorName = "Maria Santos",
+                        date = Timestamp.now(),
+                        notes = "Produtos de limpeza",
+                        status = "PROCESSED",
+                        donationId = "DOA-003"
                     )
                 ),
                 isLoading = false

@@ -22,7 +22,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.lojasocial.AppConstants
 import com.example.lojasocial.models.Beneficiary
+import com.example.lojasocial.ui.admin.components.BeneficiaryStatusBadge
 import com.example.lojasocial.ui.theme.LojaSocialTheme
+import com.google.firebase.Timestamp
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.math.abs
 
 @Composable
 fun BeneficiariesListView(
@@ -38,6 +43,7 @@ fun BeneficiariesListView(
         modifier = modifier,
         uiState = uiState,
         onSearchChange = vm::setSearch,
+        onStatusFilterChange = vm::setStatusFilter,
         onCreateClick = { navController.navigate(AppConstants.createBeneficiary) },
         onItemClick = { b ->
             val id = b.docId ?: return@BeneficiariesListViewContent
@@ -51,15 +57,25 @@ fun BeneficiariesListViewContent(
     modifier: Modifier = Modifier,
     uiState: BeneficiariesListState,
     onSearchChange: (String) -> Unit = {},
+    onStatusFilterChange: (String?) -> Unit = {},
     onCreateClick: () -> Unit = {},
     onItemClick: (Beneficiary) -> Unit = {}
 ) {
     val query = uiState.search.trim()
-    val filtered = remember(uiState.items, query) {
-        if (query.isBlank()) uiState.items
-        else uiState.items.filter {
-            val nome = it.nome.orEmpty()
-            nome.contains(query, ignoreCase = true)
+    val filtered = remember(uiState.items, query, uiState.statusFilter) {
+        uiState.items.filter { b ->
+            val matchesSearch = if (query.isBlank()) true
+            else {
+                val nome = b.nome.orEmpty()
+                val numeroAluno = b.numeroAluno.orEmpty()
+                nome.contains(query, ignoreCase = true) ||
+                numeroAluno.contains(query, ignoreCase = true)
+            }
+
+            val matchesStatus = uiState.statusFilter == null ||
+                b.status?.uppercase() == uiState.statusFilter?.uppercase()
+
+            matchesSearch && matchesStatus
         }
     }
 
@@ -118,6 +134,14 @@ fun BeneficiariesListViewContent(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // STATUS FILTER
+            StatusFilterRow(
+                currentFilter = uiState.statusFilter,
+                onFilterChange = onStatusFilterChange
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             when {
                 uiState.isLoading -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -149,8 +173,8 @@ fun BeneficiariesListViewContent(
                         contentPadding = PaddingValues(bottom = 12.dp)
                     ) {
                         items(filtered) { item ->
-                            BeneficiaryNameCell(
-                                name = item.nome ?: "(Sem nome)",
+                            BeneficiaryCard(
+                                beneficiary = item,
                                 onClick = { onItemClick(item) }
                             )
                             Divider(color = Color.Black.copy(alpha = 0.12f))
@@ -163,16 +187,36 @@ fun BeneficiariesListViewContent(
 }
 
 @Composable
-private fun BeneficiaryNameCell(
-    name: String,
+private fun BeneficiaryCard(
+    beneficiary: Beneficiary,
     onClick: () -> Unit
 ) {
+    val name = beneficiary.nome ?: "(Sem nome)"
     val initials = name.trim()
         .split(" ")
         .filter { it.isNotBlank() }
         .take(2)
         .joinToString("") { it.take(1).uppercase() }
         .ifBlank { "?" }
+
+    // Calculate relative time for last delivery
+    val lastDeliveryText = beneficiary.lastDeliveryDate?.let { timestamp ->
+        val now = System.currentTimeMillis()
+        val deliveryTime = timestamp.toDate().time
+        val diffMillis = now - deliveryTime
+        val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+
+        when {
+            diffDays == 0 -> "Hoje"
+            diffDays == 1 -> "Há 1 dia"
+            diffDays < 7 -> "Há $diffDays dias"
+            diffDays < 30 -> "Há ${diffDays / 7} semanas"
+            else -> {
+                val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                dateFormat.format(timestamp.toDate())
+            }
+        }
+    } ?: "Sem entregas"
 
     Row(
         modifier = Modifier
@@ -197,12 +241,89 @@ private fun BeneficiaryNameCell(
 
         Spacer(modifier = Modifier.width(10.dp))
 
-        Text(
-            text = name,
-            color = Color.Black,
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+        Column(Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = name,
+                    color = Color.Black,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                BeneficiaryStatusBadge(status = beneficiary.status)
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (!beneficiary.numeroAluno.isNullOrBlank()) {
+                    Text(
+                        text = beneficiary.numeroAluno!!,
+                        color = Color.Black.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "•",
+                        color = Color.Black.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Text(
+                    text = "Última entrega: $lastDeliveryText",
+                    color = Color.Black.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusFilterRow(
+    currentFilter: String?,
+    onFilterChange: (String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FilterChip(
+            selected = currentFilter == null,
+            onClick = { onFilterChange(null) },
+            label = { Text("Todos") }
+        )
+        FilterChip(
+            selected = currentFilter == "ACTIVE",
+            onClick = { onFilterChange("ACTIVE") },
+            label = { Text("Ativo") },
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = Color(0xFF66BB6A).copy(alpha = 0.2f),
+                selectedLabelColor = Color(0xFF2E7D32)
+            )
+        )
+        FilterChip(
+            selected = currentFilter == "PENDING",
+            onClick = { onFilterChange("PENDING") },
+            label = { Text("Pendente") },
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = Color(0xFFFFA726).copy(alpha = 0.2f),
+                selectedLabelColor = Color(0xFFF57C00)
+            )
+        )
+        FilterChip(
+            selected = currentFilter == "INACTIVE",
+            onClick = { onFilterChange("INACTIVE") },
+            label = { Text("Inativo") },
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = Color(0xFFBDBDBD).copy(alpha = 0.2f),
+                selectedLabelColor = Color(0xFF616161)
+            )
         )
     }
 }
@@ -214,8 +335,27 @@ fun BeneficiariesListViewPreview() {
         BeneficiariesListViewContent(
             uiState = BeneficiariesListState(
                 items = listOf(
-                    Beneficiary(docId = "1", nome = "Maria Alves"),
-                    Beneficiary(docId = "2", nome = "Antonio Ferreira")
+                    Beneficiary(
+                        docId = "1",
+                        nome = "Maria Alves",
+                        numeroAluno = "20001",
+                        status = "ACTIVE",
+                        lastDeliveryDate = Timestamp(Date(System.currentTimeMillis() - 86400000 * 3)) // 3 days ago
+                    ),
+                    Beneficiary(
+                        docId = "2",
+                        nome = "Antonio Ferreira",
+                        numeroAluno = "20002",
+                        status = "PENDING",
+                        lastDeliveryDate = null
+                    ),
+                    Beneficiary(
+                        docId = "3",
+                        nome = "João Silva",
+                        numeroAluno = "20003",
+                        status = "INACTIVE",
+                        lastDeliveryDate = Timestamp(Date(System.currentTimeMillis() - 86400000 * 15)) // 15 days ago
+                    )
                 )
             )
         )

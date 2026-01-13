@@ -16,6 +16,7 @@ import javax.inject.Inject
 data class DonationsListState(
     val items: List<Donation> = emptyList(),
     val search: String = "",
+    val statusFilter: String? = null,  // null = all, "PENDING", "RECEIVED", "PROCESSED"
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -53,5 +54,9 @@ class DonationsListViewModel @Inject constructor(
 
     fun setSearch(value: String) {
         _uiState.value = _uiState.value.copy(search = value)
+    }
+
+    fun setStatusFilter(status: String?) {
+        _uiState.value = _uiState.value.copy(statusFilter = status)
     }
 }

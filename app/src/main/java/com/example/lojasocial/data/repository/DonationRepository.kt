@@ -4,6 +4,8 @@ import android.util.Log
 import com.example.lojasocial.models.Donation
 import com.example.lojasocial.models.DonationLine
 import com.example.lojasocial.models.ResultWrapper
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -45,9 +47,30 @@ class DonationRepository @Inject constructor(
             Log.d("DonationRepository", "createDonation() iniciado - donor: ${donation.donorName}")
             emit(ResultWrapper.Loading())
 
+            // Generate sequential donation ID
+            val counterRef = db.collection("counters").document("donations")
+            val donationId = db.runTransaction { transaction ->
+                val snapshot = transaction.get(counterRef)
+                val currentCount = snapshot.getLong("count") ?: 0
+                val nextCount = currentCount + 1
+
+                transaction.set(counterRef, mapOf("count" to nextCount))
+
+                "DOA-${nextCount.toString().padStart(3, '0')}"
+            }.await()
+
+            // Set donation ID and timestamps
+            val now = Timestamp.now()
+            donation.donationId = donationId
+            donation.createdAt = now
+            donation.updatedAt = now
+            if (donation.status == null) {
+                donation.status = "PENDING"
+            }
+
             val docRef = db.collection("donations").add(donation).await()
 
-            Log.d("DonationRepository", "Donation criada com ID: ${docRef.id}")
+            Log.d("DonationRepository", "Donation criada com ID: ${docRef.id}, donationId: $donationId")
             emit(ResultWrapper.Success(docRef.id))
 
         } catch (e: Exception) {
